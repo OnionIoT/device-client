@@ -1,44 +1,153 @@
 #include <device-client.h>
 
-int curlTest() {
-	int 		status	= EXIT_SUCCESS;
-	CURL 		*curl;
+/* Auxiliary function that waits on the socket. */ 
+static int wait_on_socket(curl_socket_t sockfd, int for_recv, long timeout_ms)
+{
+  struct timeval tv;
+  fd_set infd, outfd, errfd;
+  int res;
+ 
+  tv.tv_sec = timeout_ms / 1000;
+  tv.tv_usec= (timeout_ms % 1000) * 1000;
+ 
+  FD_ZERO(&infd);
+  FD_ZERO(&outfd);
+  FD_ZERO(&errfd);
+ 
+  FD_SET(sockfd, &errfd); /* always check for error */ 
+ 
+  if(for_recv)
+  {
+    FD_SET(sockfd, &infd);
+  }
+  else
+  {
+    FD_SET(sockfd, &outfd);
+  }
+ 
+  /* select() returns the number of signalled sockets or -1 */ 
+  res = select(sockfd + 1, &infd, &outfd, &errfd, &tv);
+  return res;
+}
+
+int init() {
+	curl_global_init(CURL_GLOBAL_SSL);
+}
+
+int cleanup() {
+	curl_global_cleanup();
+}
+
+size_t onListenResponse (void *buffer, size_t size, size_t nmemb, void *userp){
+	printf("ZH: \r\n");
+	printf(buffer);
+}
+
+int dsListen (){
+	CURL 		*req;
 	CURLcode 	res;
-
-	// initialize curl
-	curl_global_init(CURL_GLOBAL_ALL);
-
-	// get a curl handle
-	curl 	= curl_easy_init();
-
-	if (!curl){
+	int status	= EXIT_SUCCESS;
+	/* Minimalistic http request */ 
+  const char *request = "GET /dev1/listen?key=key1 HTTP/1.1\r\nHost: ds.onion.io\r\n\r\n";
+  curl_socket_t sockfd; /* socket */ 
+  long sockextr;
+  size_t iolen;
+  curl_off_t nread;
+	
+	// initialize request
+	req 	= curl_easy_init();
+	if(!req){
 		return EXIT_FAILURE;
 	}
 
 	// set the URL
-	curl_easy_setopt(curl, CURLOPT_URL, "http://postit.example.com/moo.cgi");
-	// set the POST data
-	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "name=daniel&project=curl");
-
-	// perform the request and get return code
-	res = curl_easy_perform(curl);
-	// check for errors
-	if (res != CURLE_OK) {
-		fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res) );
-		status 	= EXIT_FAILURE;
+	curl_easy_setopt(req, CURLOPT_URL, "https://ds.onion.io");
+	// 	curl_easy_setopt(req, CURLOPT_TIMEOUT, 30L);
+	curl_easy_setopt(req, CURLOPT_CONNECT_ONLY, 1L);
+	res = curl_easy_perform(req);
+	if(CURLE_OK != res)
+	{
+		printf("Error: %s\n", strerror(res));
+		return 1;
 	}
+	res = curl_easy_getinfo(req, CURLINFO_LASTSOCKET, &sockextr);
+ 
+    if(CURLE_OK != res)
+    {
+      printf("Error: %s\n", curl_easy_strerror(res));
+      return 1;
+    }
 
-	// cleanup
-	curl_easy_cleanup(curl);
-
+		sockfd = sockextr;
+ 
+    /* wait for the socket to become ready for sending */ 
+    if(!wait_on_socket(sockfd, 0, 60000L))
+    {
+      printf("Error: timeout.\n");
+      return 1;
+    }
+	
+	puts("Sending request.");
+    /* Send the request. Real applications should check the iolen
+     * to see if all the request has been sent */ 
+    res = curl_easy_send(req, request, strlen(request), &iolen);
+ 
+    if(CURLE_OK != res)
+    {
+      printf("Error: %s\n", curl_easy_strerror(res));
+      return 1;
+    }
+    puts("Reading response.");
+ 
+    /* read the response */ 
+    for(;;)
+    {
+      char buf[1024];
+ 
+      wait_on_socket(sockfd, 1, 60000L);
+      res = curl_easy_recv(req, buf, 1024, &iolen);
+ 
+      if(CURLE_OK != res)
+        break;
+ 
+      nread = (curl_off_t)iolen;
+ 
+      printf("Received %" CURL_FORMAT_CURL_OFF_T " bytes.\n", nread);
+			printf("Data: ");
+			int i;
+			char *ref = &buf;
+			for(i =0;i<nread; i++){
+				if(ref[0]!='{'){
+					ref++;
+				}else{
+					break;
+				}
+			}
+			printf(ref);
+    }
+	
+	curl_easy_cleanup(req);
 	return status;
 }
 
+int doPost(url, body){
+	return 0;
+}
+
+
+
 int main(int argc, char** argv)
 {
+	init();
+	
 	int 	status;
 
-	status 	= curlTest();
+// 	status 	= dsListen();
+	
+	cleanup();
+	
+	printf(DEVICE_SERVER);
 
 	return 0;
 }
+
