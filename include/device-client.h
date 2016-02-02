@@ -25,6 +25,6 @@ struct ReplyObj {
 };
 
 // Function declarations
-int sendReply (ReplyObj reply);
+//int sendReply (ReplyObj reply);
 
 
