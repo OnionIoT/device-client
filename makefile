@@ -21,7 +21,7 @@ OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 
 
 # flags
-CFLAGS := -g # -Wall
+CFLAGS := -g -lz # -Wall
 
 INC := $(shell find $(INCDIR) -maxdepth 1 -type d -exec echo -I {}  \;)
 #LIB := $(LIB) -L$(LIBDIR) -loniondebug -lonioni2c

@@ -9,9 +9,8 @@
 #include <onion-debug.h>
 
 #include "libubus.h"
-#include "curl/curl.h"
 
-#endif // _DEVICE_CLIENT_H_ 
+#include "curl-communication.h"
 
 
 // Macro definition
@@ -28,3 +27,4 @@ struct ReplyObj {
 //int sendReply (ReplyObj reply);
 
 
+#endif // _DEVICE_CLIENT_H_ 
