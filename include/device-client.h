@@ -9,6 +9,7 @@
 #include <onion-debug.h>
 
 #include <device-client-types.h>
+#include <device-client-utils.h>
 
 #include "json-c/json.h"
 #include "libubus.h"

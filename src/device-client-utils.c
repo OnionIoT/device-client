@@ -13,35 +13,55 @@ void jsonPrint (int severity, json_object *jobj)
 				onionPrint(severity, "null\n");
 				break;
 			case json_type_boolean: 
-			    onionPrint(severity, "%d (bool)\n", json_object_get_boolean(val));
+			    onionPrint(severity, "%d (bool)\n", json_object_get_boolean(val) );
 			    break;
 			case json_type_double:
-			    onionPrint(severity, "%lf (double)\n", json_object_get_double(val));
+			    onionPrint(severity, "%lf (double)\n", json_object_get_double(val) );
 			    break;
 			case json_type_int:
-			    onionPrint(severity, "%d (int)\n", json_object_get_int(val));
+			    onionPrint(severity, "%d (int)\n", json_object_get_int(val) );
 			    break;
 			case json_type_object:
 			    jobj = json_object_object_get(jobj, key);
 			    jsonPrint(severity, jobj);
 			    break;
 			case json_type_string:
-			    onionPrint(severity, "\"%s\"\n", json_object_get_string(val));
+			    onionPrint(severity, "\"%s\"\n", json_object_get_string(val) );
 			    break;
 		}
 	}
 }
 
-int jsonFindByKey (char* key, json_object *jobj, json_object *jret)
+/*int jsonFindByKey (char* key, json_object *jobj, json_object *jret)
 {
 	int 	status;
 
 	enum json_type type;
 
 	status 	= json_object_object_get_ex(jobj, key, jret);
-	/*json_object_object_foreach(jobj, keyCurrent, val) {
+	json_object_object_foreach(jobj, keyCurrent, val) {
 		if (strncmp(key, keyCurrent, strlen(key)) == 0 ) {
 			jret 	= 
 		}
-	}*/
+	}
+}*/
+
+int jsonGetString (json_object *jobj, char* value)
+{
+	int 	status;
+	enum json_type type;
+
+	// find the type
+	type = json_object_get_type(jobj);
+
+	if (type == json_type_string) {
+		status 	= EXIT_SUCCESS;
+		strcpy(value, json_object_get_string(jobj) );
+	}
+	else {
+		status 	= EXIT_FAILURE;
+	}
+
+	return 	status;
 }
+

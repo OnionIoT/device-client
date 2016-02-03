@@ -10,7 +10,8 @@
 #include "json-c/json.h"
 
 
-void 			jsonPrint		(int severity, json_object *jobj);
+void 			jsonPrint			(int severity, json_object *jobj);
+int 			jsonGetString 		(json_object *jobj, char* value);
 
 
 #endif // _DEVICE_CLIENT_UTILS_H_ 

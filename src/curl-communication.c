@@ -18,11 +18,11 @@ static int wait_on_socket(curl_socket_t sockfd, int for_recv, long timeout_ms)
 
 	if(for_recv)
 	{
-	FD_SET(sockfd, &infd);
+		FD_SET(sockfd, &infd);
 	}
 	else
 	{
-	FD_SET(sockfd, &outfd);
+		FD_SET(sockfd, &outfd);
 	}
 
 	/* select() returns the number of signalled sockets or -1 */ 
@@ -54,8 +54,6 @@ int parseRecvData(int nread, char* buf)
 	char 	*ref;
 	json_object 	*jobj;
 
-	onionPrint(ONION_SEVERITY_DEBUG, "> Data:\n");
-
 	// parse the json from the received data into a char
 	ref = &buf[0];
 	for(i =0; i<nread; i++){
@@ -67,12 +65,11 @@ int parseRecvData(int nread, char* buf)
 		}
 	}
 
-	onionPrint(ONION_SEVERITY_DEBUG, ref);
+	onionPrint(ONION_SEVERITY_DEBUG_EXTRA, ">> Data:\n%s\n", ref);
 
 	// parse the char into a json object
 	if (strlen(ref) > 0) {
 		jobj = json_tokener_parse(ref);
-		jsonPrint(ONION_SEVERITY_INFO, jobj);
 
 		// perform device client operations
 		status 	= deviceClientOperation(jobj);
@@ -108,10 +105,11 @@ int dsListen (char* devId, char* key, char* host)
 	}
 
 	// set the URL
-	//curl_easy_setopt(req, CURLOPT_URL, "http://zh.onion.io:8081");
 	curl_easy_setopt(req, CURLOPT_URL, host);
 	// 	curl_easy_setopt(req, CURLOPT_TIMEOUT, 30L);
 	curl_easy_setopt(req, CURLOPT_CONNECT_ONLY, 1L);
+
+	// perform the action
 	res = curl_easy_perform(req);
 	if(CURLE_OK != res)
 	{
