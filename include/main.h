@@ -1,5 +1,5 @@
-#ifndef _DEVICE_CLIENT_H_
-#define _DEVICE_CLIENT_H_
+#ifndef _DEVICE_CLIENT_MAIN_H_
+#define _DEVICE_CLIENT_MAIN_H_
 
 #include <string.h>
 #include <stdlib.h>
@@ -8,15 +8,14 @@
 
 #include <onion-debug.h>
 
+#include <curl-communication.h>
 #include <device-client-types.h>
 
-#include "json-c/json.h"
 #include "libubus.h"
 
 
 // Function declarations
-int 	deviceClientOperation 		(json_object *jobj);
 //int sendReply (ReplyObj reply);
 
 
-#endif // _DEVICE_CLIENT_H_ 
+#endif // _DEVICE_CLIENT_MAIN_H_ 

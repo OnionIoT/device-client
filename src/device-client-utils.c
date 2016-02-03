@@ -31,3 +31,17 @@ void jsonPrint (int severity, json_object *jobj)
 		}
 	}
 }
+
+int jsonFindByKey (char* key, json_object *jobj, json_object *jret)
+{
+	int 	status;
+
+	enum json_type type;
+
+	status 	= json_object_object_get_ex(jobj, key, jret);
+	/*json_object_object_foreach(jobj, keyCurrent, val) {
+		if (strncmp(key, keyCurrent, strlen(key)) == 0 ) {
+			jret 	= 
+		}
+	}*/
+}

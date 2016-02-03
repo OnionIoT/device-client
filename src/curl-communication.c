@@ -50,10 +50,11 @@ size_t onListenResponse (void *buffer, size_t size, size_t nmemb, void *userp){
 int parseRecvData(int nread, char* buf)
 {
 	int 	i;
+	int 	status;
 	char 	*ref;
 	json_object 	*jobj;
 
-	onionPrint(ONION_SEVERITY_DEBUG, "Data: ");
+	onionPrint(ONION_SEVERITY_DEBUG, "> Data:\n");
 
 	// parse the json from the received data into a char
 	ref = &buf[0];
@@ -71,20 +72,30 @@ int parseRecvData(int nread, char* buf)
 	// parse the char into a json object
 	if (strlen(ref) > 0) {
 		jobj = json_tokener_parse(ref);
-		jsonPrint(ONION_SEVERITY_DEBUG, jobj);
-	}
-	
+		jsonPrint(ONION_SEVERITY_INFO, jobj);
+
+		// perform device client operations
+		status 	= deviceClientOperation(jobj);
+	}	
 }
 
 // listen to device server
-int dsListen ()
+int dsListen (char* devId, char* key, char* host)
 {
 	CURL 		*req;
 	CURLcode 	res;
 	int 		status	= EXIT_SUCCESS;
 
+	char 		listenPath[STRING_LENGTH];
+	char 		request[STRING_LENGTH];
+
 	/* Minimalistic http request */ 
-	const char *request = "GET /dev1/listen?key=key1 HTTP/1.1\r\nHost: ds.onion.io\r\n\r\n";
+
+	// generate the http request:
+	//	"GET /dev1/listen?key=key1 HTTP/1.1\r\nHost: zh.onion.io\r\n\r\n";
+	sprintf(listenPath, LISTEN_PATH_TEMPLATE, devId, key);
+	sprintf(request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", listenPath, host);
+
 	curl_socket_t sockfd; /* socket */ 
 	long sockextr;
 	size_t iolen;
@@ -97,7 +108,8 @@ int dsListen ()
 	}
 
 	// set the URL
-	curl_easy_setopt(req, CURLOPT_URL, "http://zh.onion.io:8081");
+	//curl_easy_setopt(req, CURLOPT_URL, "http://zh.onion.io:8081");
+	curl_easy_setopt(req, CURLOPT_URL, host);
 	// 	curl_easy_setopt(req, CURLOPT_TIMEOUT, 30L);
 	curl_easy_setopt(req, CURLOPT_CONNECT_ONLY, 1L);
 	res = curl_easy_perform(req);
@@ -123,7 +135,7 @@ int dsListen ()
 	  return EXIT_FAILURE;
 	}
 	
-	onionPrint(ONION_SEVERITY_DEBUG, "Sending request.\n");
+	onionPrint(ONION_SEVERITY_INFO, "> Sending request.\n");
 	/* Send the request. Real applications should check the iolen
 	 * to see if all the request has been sent */ 
 	res = curl_easy_send(req, request, strlen(request), &iolen);
@@ -135,15 +147,15 @@ int dsListen ()
 	}
 	
 	/* read the response */ 
-	onionPrint(ONION_SEVERITY_DEBUG, "Reading response.\n");
+	onionPrint(ONION_SEVERITY_INFO, "> Reading response.\n");
 	for(;;)
 	{
-		char buf[1024];
+		char buf[BUFFER_LENGTH];
 		memset(&buf[0], 0, sizeof(buf));	// clear the buffer
 
-		onionPrint(ONION_SEVERITY_DEBUG, "Waiting on socket...\n");
+		onionPrint(ONION_SEVERITY_DEBUG, ">> Waiting on socket...\n");
 		wait_on_socket(sockfd, 1, 60000L);
-		res = curl_easy_recv(req, buf, 1024, &iolen);
+		res = curl_easy_recv(req, buf, BUFFER_LENGTH, &iolen);
 
 		if(CURLE_OK != res) {
 			break;
@@ -151,8 +163,8 @@ int dsListen ()
 
 		nread = (curl_off_t)iolen;
 
-		onionPrint(ONION_SEVERITY_DEBUG, "Received %" CURL_FORMAT_CURL_OFF_T " bytes.\n", nread);
-		onionPrint(ONION_SEVERITY_DEBUG_EXTRA, "Received data: '%s'\n", buf);
+		onionPrint(ONION_SEVERITY_INFO, "\n> Received %" CURL_FORMAT_CURL_OFF_T " bytes.\n", nread);
+		onionPrint(ONION_SEVERITY_DEBUG_EXTRA, ">> Received data: '%s'\n", buf);
 
 		// parse the json from the received data;
 		status 	= parseRecvData(nread, buf);

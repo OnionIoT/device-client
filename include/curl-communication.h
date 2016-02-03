@@ -8,6 +8,8 @@
 
 #include <onion-debug.h>
 
+#include <device-client-types.h>
+
 #include "curl/curl.h"
 #include "json-c/json.h"
 
@@ -16,7 +18,7 @@ int 			curlInit		();
 int 			curlCleanup		();
 
 
-int 			dsListen 		();
+int 			dsListen 		(char* devId, char* key, char* host);
 
 #endif // _CURL_COMMUNICATION_H_ 
 

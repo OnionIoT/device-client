@@ -1,61 +1,19 @@
 #include <device-client.h>
 
-void usage(const char* progName) 
+int deviceClientOperation (json_object *jobj)
 {
-	printf("device-client: interface with Onion cloud device-server\n");
-}
+	int 	status;
+	json_object 	*jret;
 
-int main(int argc, char** argv)
-{
-	const char 	*progname;
-	int 		status;
-	int 		ch;
-	int 		verbose;
+	status 	= json_object_object_get_ex(jobj, "group", NULL);	//fix last arg
 
-	// set defaults
-	verbose 		= ONION_VERBOSITY_NORMAL;
-
-	// save the program name
-	progname 		= argv[0];	
-
-
-	//// parse the option arguments
-	while ((ch = getopt(argc, argv, "vqh")) != -1) {
-		switch (ch) {
-		case 'v':
-			// verbose output
-			verbose++;
-			break;
-		case 'q':
-			// quiet output
-			verbose = ONION_SEVERITY_FATAL;
-			break;
-		default:
-			usage(progname);
-			return 0;
-		}
+	// check if object with key 'group' is found
+	if (status != 0) {
+		// found the a group object
+		onionPrint(ONION_SEVERITY_DEBUG, "found 'group' object (status: %d)\n", status); 
 	}
-
-	// advance past the option arguments
-	//argc 	-= optind;
-	//argv	+= optind;
-
-
-	///////////////////
-	// set verbosity
-	onionSetVerbosity(verbose);
-
-	// curl init
-	curlInit();
-
-	// curl listen
-	status 	= dsListen();
 	
-	// curl cleanup
-	curlCleanup();
-	
-	printf(DEVICE_SERVER);
 
-	return 0;
+	return 	status;
 }
 
