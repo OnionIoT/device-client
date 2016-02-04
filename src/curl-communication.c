@@ -1,7 +1,5 @@
 #include <curl-communication.h>
 
-// global variables
-CURL 		*gCurlHandle;
 
 /* Auxiliary function that waits on the socket. */ 
 static int wait_on_socket(curl_socket_t sockfd, int for_recv, long timeout_ms)
@@ -103,9 +101,6 @@ int curlListen (char* host, char* request)
 	curl_easy_setopt(req, CURLOPT_URL, host);
 	// 	curl_easy_setopt(req, CURLOPT_TIMEOUT, 30L);
 	curl_easy_setopt(req, CURLOPT_CONNECT_ONLY, 1L);
-
-	// copy the curl handle
-	gCurlHandle 	= curl_easy_duphandle(req);
 
 	// perform the action
 	res = curl_easy_perform(req);
