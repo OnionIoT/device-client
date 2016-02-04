@@ -173,6 +173,7 @@ int curlPost(char* url, char* postData)
 	int status;
 	CURL *curl;
 	CURLcode res;
+	struct curl_slist *headers = NULL;	// http headers to send with request
 
 	onionPrint(ONION_SEVERITY_DEBUG, ">> Sending POST to url: '%s', post data: '%s'\n", url, postData);
 
@@ -181,8 +182,14 @@ int curlPost(char* url, char* postData)
 
 	// check that the handle is ok
 	if(curl) {
+		/* set content type */
+		headers = curl_slist_append(headers, "Accept: application/json");
+		headers = curl_slist_append(headers, "Content-Type: application/json");
+
 		// set the URL that will receive the POST
 		curl_easy_setopt(curl, CURLOPT_URL, url);
+		// set headers
+		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 		// specify the POST data
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postData);
 
