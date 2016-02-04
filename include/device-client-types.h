@@ -12,7 +12,7 @@
 
 #define LISTEN_PATH_TEMPLATE 		"/%s/listen?key=%s"
 //#define REPLY_PATH_TEMPLATE 		"/%s/reply?key=%s"
-#define REPLY_PATH_TEMPLATE 		"/%s/reply/%s"
+#define REPLY_PATH_TEMPLATE 		"/%s/reply/%s?key=%s"
 #define REPLY_POST_TEMPLATE 		"key=%s"
 
 #define JSON_REQUEST_GROUP_KEY		"group"

@@ -111,11 +111,11 @@ int dcSendResponse (json_object *jobj)
 
 	// generate the URL to receive the post:
 	//	ds.onion.io/<deviceId>/reply/<eventId>
-	sprintf(postPath, REPLY_PATH_TEMPLATE, dcInfo.devId, eventId);
+	sprintf(postPath, REPLY_PATH_TEMPLATE, dcInfo.devId, eventId, dcInfo.key);
 	sprintf(url, "%s%s", dcInfo.host, postPath);
 
 	// generate the data to POST
-	sprintf(postData, REPLY_POST_TEMPLATE, dcInfo.key);
+	sprintf(postData, "{\"success\":\"OK\"}");
 
 	// send the POST
 	status 	= curlPost(url, postData);
