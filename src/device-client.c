@@ -26,6 +26,8 @@ int dcRun (char* devId, char* key, char* host)
 	// start listening to the device server
 	curlListen(host, request);
 
+	onionPrint(ONION_SEVERITY_INFO, "> Connection lost!\n");
+
 
 	return 	status;
 }
@@ -56,9 +58,17 @@ int dcProcessRecvCommand (json_object *jobj)
 
 		// read the command
 		if (strncmp(cmd, DEVICE_COMMAND_UBUS, strlen(DEVICE_COMMAND_UBUS)) == 0 ) {
-			/// UBUS COMMAND
+			//// UBUS COMMAND
 			// create thread to run ubus command and send post response
 			pthread_create(&pth, NULL, dcResponseThread, jobj); 
+		}
+		else if (strncmp(cmd, DEVICE_COMMAND_INIT, strlen(DEVICE_COMMAND_INIT)) == 0 ) {
+			//// INIT CONNECTION
+			onionPrint(ONION_SEVERITY_INFO, "    > Connection initialized\n");
+		}
+		else if (strncmp(cmd, DEVICE_COMMAND_HEARTBEAT, strlen(DEVICE_COMMAND_HEARTBEAT)) == 0 ) {
+			//// HEARTBEAT
+			onionPrint(ONION_SEVERITY_INFO, "    > Connection heartbeat\n");
 		}
 	}
 	else {
