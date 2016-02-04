@@ -19,6 +19,7 @@ int 			curlCleanup		();
 
 
 int 			curlListen 		(char* host, char* request);
+int  			curlPost		(char* url, char* postData);
 
 #endif // _CURL_COMMUNICATION_H_ 
 

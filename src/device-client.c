@@ -87,11 +87,39 @@ int dcProcessUbusCommand (json_object *jobj)
 }
 
 // send a response to the server
-int dcSendResponse ()
+int dcSendResponse (json_object *jobj)
 {
 	int 	status;
+	char	eventId[STRING_LENGTH];
+	char	url[STRING_LENGTH];
+	char	postPath[STRING_LENGTH];
+	char	postData[STRING_LENGTH];
 
-	onionPrint(ONION_SEVERITY_DEBUG, ">> Sending response to device-server as device '%s'\n", dcInfo.devId); 
+	json_object 	*jret;
+
+	onionPrint(ONION_SEVERITY_INFO, "> Sending response to device-server\n"); 
+
+	// parse the event id
+	status 	= 	json_object_object_get_ex(jobj, JSON_REQUEST_EVENT_ID_KEY, &jret);
+	if (status != 0) {
+		// read the strings from the objects
+		status	= 	jsonGetString(jret, &eventId);
+	}
+	else {
+		return EXIT_FAILURE;
+	}
+
+	// generate the URL to receive the post:
+	//	ds.onion.io/<deviceId>/reply/<eventId>
+	sprintf(postPath, REPLY_PATH_TEMPLATE, dcInfo.devId, eventId);
+	sprintf(url, "%s%s", dcInfo.host, postPath);
+
+	// generate the data to POST
+	sprintf(postData, REPLY_POST_TEMPLATE, dcInfo.key);
+
+	// send the POST
+	status 	= curlPost(url, postData);
+
 
 	return 	status;
 }

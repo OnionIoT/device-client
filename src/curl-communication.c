@@ -103,6 +103,7 @@ int curlListen (char* host, char* request)
 	curl_easy_setopt(req, CURLOPT_CONNECT_ONLY, 1L);
 
 	// perform the action
+	onionPrint(ONION_SEVERITY_DEBUG, ">> Connecting to host '%s' to listen\n", host);
 	res = curl_easy_perform(req);
 	if(CURLE_OK != res)
 	{
@@ -127,14 +128,15 @@ int curlListen (char* host, char* request)
 	}
 	
 	onionPrint(ONION_SEVERITY_INFO, "> Sending request.\n");
+	onionPrint(ONION_SEVERITY_DEBUG_EXTRA, "> Request: '%s'\n", request);
 	/* Send the request. Real applications should check the iolen
 	 * to see if all the request has been sent */ 
 	res = curl_easy_send(req, request, strlen(request), &iolen);
  
 	if(CURLE_OK != res)
 	{
-	  onionPrint(ONION_SEVERITY_FATAL, "Error: %s\n", curl_easy_strerror(res));
-	  return 1;
+		onionPrint(ONION_SEVERITY_FATAL, "Error: %s\n", curl_easy_strerror(res));
+		return EXIT_FAILURE;
 	}
 	
 	/* read the response */ 
@@ -165,6 +167,43 @@ int curlListen (char* host, char* request)
 	return status;
 }
 
-int doPost(url, body){
-	return 0;
+// perform an http post operation
+int curlPost(char* url, char* postData)
+{
+	int status;
+	CURL *curl;
+	CURLcode res;
+
+	onionPrint(ONION_SEVERITY_DEBUG, ">> Sending POST to url: '%s', post data: '%s'\n", url, postData);
+
+	// get the handle
+	curl = curl_easy_init();
+
+	// check that the handle is ok
+	if(curl) {
+		// set the URL that will receive the POST
+		curl_easy_setopt(curl, CURLOPT_URL, url);
+		// specify the POST data
+		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postData);
+
+		// Perform the request, res will get the return code
+		res = curl_easy_perform(curl);
+		
+		// Check for errors
+		if(res != CURLE_OK) {
+			onionPrint(ONION_SEVERITY_FATAL, "Error: %s\n", curl_easy_strerror(res));
+			status 	=  EXIT_FAILURE;
+		}
+
+		
+		// cleanup
+		curl_easy_cleanup(curl);
+	}
+
+	return status;
 }
+
+
+
+
+

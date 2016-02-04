@@ -23,7 +23,7 @@ int 	dcRun 							(char* devId, char* key, char* host);
 int 	dcProcessRecvCommand 			(json_object *jobj);
 
 int 	dcProcessUbusCommand 			(json_object *jobj);
-int 	dcSendResponse 					();
+int 	dcSendResponse 					(json_object *jobj);
 
 
 void 	*dcResponseThread				(void *arg);
