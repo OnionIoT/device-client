@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include <pthread.h>
+
 #include <onion-debug.h>
 
 #include <device-client-types.h>
@@ -19,7 +21,12 @@
 int 	dcRun 							(char* devId, char* key, char* host);
 
 int 	dcProcessRecvCommand 			(json_object *jobj);
-//int sendReply (ReplyObj reply);
+
+int 	dcProcessUbusCommand 			(json_object *jobj);
+int 	dcSendResponse 					();
+
+
+void 	*dcResponseThread				(void *arg);
 
 
 #endif // _DEVICE_CLIENT_H_ 

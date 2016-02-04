@@ -33,10 +33,35 @@ int dcProcessRecvCommand (json_object *jobj)
 	int 			status 	= EXIT_FAILURE;
 	json_object 	*jGroup;
 	json_object 	*jMethod;
-	char			group[STRING_LENGTH];
-	char			method[STRING_LENGTH];
+
+	pthread_t 		pth;
+
 
 	jsonPrint(ONION_SEVERITY_DEBUG, jobj, "");
+
+	// check the received json for the 'group' and 'method' objects
+	status 	= 	json_object_object_get_ex(jobj, JSON_REQUEST_GROUP_KEY, &jGroup);
+	status 	|=	json_object_object_get_ex(jobj, JSON_REQUEST_METHOD_KEY, &jMethod);
+
+	// check if the 'group' and 'method' object are both found
+	if (status != 0) {
+		// create thread
+		pthread_create(&pth, NULL, dcResponseThread, jobj); 
+	}
+	
+
+	return 	status;
+}
+
+// process a requested ubus command
+// LAZAR: add json object for ubus return
+int dcProcessUbusCommand (json_object *jobj)
+{
+	int 			status;
+	json_object 	*jGroup;
+	json_object 	*jMethod;
+	char			group[STRING_LENGTH];
+	char			method[STRING_LENGTH];
 
 	// check the received json for the 'group' and 'method' objects
 	status 	= 	json_object_object_get_ex(jobj, JSON_REQUEST_GROUP_KEY, &jGroup);
@@ -55,12 +80,40 @@ int dcProcessRecvCommand (json_object *jobj)
 			onionPrint(ONION_SEVERITY_INFO, ">> Received command request for '%s' group, '%s' function\n", group, method);
 
 			// LAZAR: add ubus call
-
-			// reply to server
 		}
 	}
-	
 
 	return 	status;
+}
+
+// send a response to the server
+int dcSendResponse ()
+{
+	int 	status;
+
+	onionPrint(ONION_SEVERITY_DEBUG, ">> Sending response to device-server as device '%s'\n", dcInfo.devId); 
+
+	return 	status;
+}
+
+// threading function to carry out ubus command and send response
+void *dcResponseThread(void *arg)
+{
+	int 			status;
+	json_object 	*jobj;
+
+	onionPrint(ONION_SEVERITY_DEBUG, "\n>> RESPONSE THREAD!\n");
+
+	// convert the argument to json object
+	jobj 	= (json_object*)arg;
+
+	// carry out the ubus command
+	status 	= dcProcessUbusCommand(jobj);
+
+	// send the response to the server
+	status 	= dcSendResponse(jobj);
+
+
+	return NULL;
 }
 
