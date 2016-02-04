@@ -1,6 +1,34 @@
 #include <device-client.h>
 
-int deviceClientOperation (json_object *jobj)
+// global variable
+struct 	deviceClientInfo	dcInfo;
+
+// main function to launch the listening service
+int dcRun (char* devId, char* key, char* host)
+{
+	int 	status;
+	char 	listenPath[STRING_LENGTH];
+	char 	request[STRING_LENGTH];
+
+	// store pertinent info globally
+	strcpy(dcInfo.host, 	host);
+	strcpy(dcInfo.devId, 	devId);
+	strcpy(dcInfo.key, 		key);
+
+	// generate the http request:
+	//	"GET /dev1/listen?key=key1 HTTP/1.1\r\nHost: zh.onion.io\r\n\r\n";
+	sprintf(listenPath, LISTEN_PATH_TEMPLATE, devId, key);
+	sprintf(request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", listenPath, host);
+
+	// start listening to the device server
+	curlListen(host, request);
+
+
+	return 	status;
+}
+
+// process all commands received from the device server
+int dcProcessRecvCommand (json_object *jobj)
 {
 	int 			status 	= EXIT_FAILURE;
 	json_object 	*jGroup;

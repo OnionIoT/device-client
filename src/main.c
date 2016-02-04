@@ -59,19 +59,23 @@ int main(int argc, char** argv)
 
 
 	///////////////////
+	//* initialization *//
 	// set verbosity
 	onionSetVerbosity(verbose);
-
 	// curl init
 	curlInit();
 
-	// curl listen
-	status 	= dsListen("dev1","key1", host);
-	
+	//* program *//
+	// find the device id and key
+	// LAZAR: add this
+
+	// launch the device client
+	status 	= dcRun("dev1","key1", host);
+
+	//* clean-up *//
 	// curl cleanup
 	curlCleanup();
 	
-
 	return 0;
 }
 

@@ -16,7 +16,9 @@
 
 
 // Function declarations
-int 	deviceClientOperation 		(json_object *jobj);
+int 	dcRun 							(char* devId, char* key, char* host);
+
+int 	dcProcessRecvCommand 			(json_object *jobj);
 //int sendReply (ReplyObj reply);
 
 

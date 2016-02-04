@@ -74,28 +74,20 @@ int parseRecvData(int nread, char* buf)
 	if (strlen(ref) > 0) {
 		jobj = json_tokener_parse(ref);
 
-		// perform device client operations
-		status 	= deviceClientOperation(jobj);
+		// device client - process the command received from the server
+		status 	= dcProcessRecvCommand(jobj);
 	}	
 }
 
 // listen to device server
-int dsListen (char* devId, char* key, char* host)
+int curlListen (char* host, char* request)
 {
 	CURL 		*req;
 	CURLcode 	res;
 	int 		status	= EXIT_SUCCESS;
 
-	char 		listenPath[STRING_LENGTH];
-	char 		request[STRING_LENGTH];
 
 	/* Minimalistic http request */ 
-
-	// generate the http request:
-	//	"GET /dev1/listen?key=key1 HTTP/1.1\r\nHost: zh.onion.io\r\n\r\n";
-	sprintf(listenPath, LISTEN_PATH_TEMPLATE, devId, key);
-	sprintf(request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", listenPath, host);
-
 	curl_socket_t sockfd; /* socket */ 
 	long sockextr;
 	size_t iolen;

@@ -18,7 +18,7 @@ int 			curlInit		();
 int 			curlCleanup		();
 
 
-int 			dsListen 		(char* devId, char* key, char* host);
+int 			curlListen 		(char* host, char* request);
 
 #endif // _CURL_COMMUNICATION_H_ 
 

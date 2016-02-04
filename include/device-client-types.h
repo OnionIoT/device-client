@@ -17,12 +17,12 @@
 #define JSON_REQUEST_METHOD_KEY		"method"
 
 // Data structures
-struct ReplyObj {
-  
-};
+struct deviceClientInfo {
+	char 	host[STRING_LENGTH];
 
-// Function declarations
-//int sendReply (ReplyObj reply);
+	char	devId[STRING_LENGTH];
+	char	key[STRING_LENGTH]; 
+};
 
 
 #endif // _DEVICE_CLIENT_TYPES_H_ 
