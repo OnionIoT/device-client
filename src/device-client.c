@@ -10,6 +10,9 @@ int dcRun (char* devId, char* key, char* host)
 	char 	listenPath[STRING_LENGTH];
 	char 	request[STRING_LENGTH];
 
+	// initialize the ubus blob msg
+	//ubusInit();
+
 	// store pertinent info globally
 	strcpy(dcInfo.host, 	host);
 	strcpy(dcInfo.devId, 	devId);
@@ -60,27 +63,39 @@ int dcProcessUbusCommand (json_object *jobj)
 	int 			status;
 	json_object 	*jGroup;
 	json_object 	*jMethod;
+	json_object 	*jParam;
 	char			group[STRING_LENGTH];
 	char			method[STRING_LENGTH];
 
 	// check the received json for the 'group' and 'method' objects
-	status 	= 	json_object_object_get_ex(jobj, JSON_REQUEST_GROUP_KEY, &jGroup);
+	status 	= 	json_object_object_get_ex(jobj, JSON_REQUEST_GROUP_KEY,  &jGroup);
 	status 	|=	json_object_object_get_ex(jobj, JSON_REQUEST_METHOD_KEY, &jMethod);
+	//status 	|=	json_object_object_get_ex(jobj, JSON_REQUEST_PARAM_KEY,  &jParam);
 
 	// check if the 'group' and 'method' object are both found
 	if (status != 0) {
 		onionPrint(ONION_SEVERITY_DEBUG, ">> Found 'group' and 'method' objects\n"); 
 
+		// initialize the ubus blob msg
+		ubusInit();
+
 		// read the strings from the objects
 		status	= 	jsonGetString(jGroup, &group);
 		status	|= 	jsonGetString(jMethod, &method);
+
+		// convert param object to string
+		// LAZAR: implement this
 
 		// check that strings were read properly
 		if (status == EXIT_SUCCESS) {
 			onionPrint(ONION_SEVERITY_INFO, ">> Received command request for '%s' group, '%s' function\n", group, method);
 
-			// LAZAR: add ubus call
+			// make the ubus call
+			status = ubusCall(group, method, "{}");	//LAZAR: change the "" to params 
 		}
+
+		// clean-up the ubus blob msg
+		ubusFree();
 	}
 
 	return 	status;

@@ -14,7 +14,6 @@
 #include <device-client-utils.h>
 
 #include "json-c/json.h"
-#include "libubus.h"
 
 
 // Function declarations

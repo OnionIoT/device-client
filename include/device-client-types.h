@@ -17,6 +17,7 @@
 
 #define JSON_REQUEST_GROUP_KEY		"group"
 #define JSON_REQUEST_METHOD_KEY		"method"
+#define JSON_REQUEST_PARAM_KEY		"param"
 #define JSON_REQUEST_EVENT_ID_KEY	"eventId"
 
 // Data structures
