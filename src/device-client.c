@@ -8,7 +8,7 @@ int deviceClientOperation (json_object *jobj)
 	char			group[STRING_LENGTH];
 	char			method[STRING_LENGTH];
 
-	jsonPrint(ONION_SEVERITY_DEBUG, jobj);
+	jsonPrint(ONION_SEVERITY_DEBUG, jobj, "");
 
 	// check the received json for the 'group' and 'method' objects
 	status 	= 	json_object_object_get_ex(jobj, JSON_REQUEST_GROUP_KEY, &jGroup);

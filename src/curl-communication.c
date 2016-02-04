@@ -1,5 +1,8 @@
 #include <curl-communication.h>
 
+// global variables
+CURL 		*gCurlHandle;
+
 /* Auxiliary function that waits on the socket. */ 
 static int wait_on_socket(curl_socket_t sockfd, int for_recv, long timeout_ms)
 {
@@ -109,6 +112,9 @@ int dsListen (char* devId, char* key, char* host)
 	// 	curl_easy_setopt(req, CURLOPT_TIMEOUT, 30L);
 	curl_easy_setopt(req, CURLOPT_CONNECT_ONLY, 1L);
 
+	// copy the curl handle
+	gCurlHandle 	= curl_easy_duphandle(req);
+
 	// perform the action
 	res = curl_easy_perform(req);
 	if(CURLE_OK != res)
@@ -162,7 +168,7 @@ int dsListen (char* devId, char* key, char* host)
 		nread = (curl_off_t)iolen;
 
 		onionPrint(ONION_SEVERITY_INFO, "\n> Received %" CURL_FORMAT_CURL_OFF_T " bytes.\n", nread);
-		onionPrint(ONION_SEVERITY_DEBUG_EXTRA, ">> Received data: '%s'\n", buf);
+		onionPrint(ONION_SEVERITY_DEBUG_EXTRA+1, ">> Received data: '%s'\n", buf);
 
 		// parse the json from the received data;
 		status 	= parseRecvData(nread, buf);

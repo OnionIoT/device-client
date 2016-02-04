@@ -1,11 +1,12 @@
 #include <device-client-utils.h>
 
-void jsonPrint (int severity, json_object *jobj)
+void jsonPrint (int severity, json_object *jobj, char* tab)
 {
 	enum json_type type;
+	char 	tabNext[STRING_LENGTH];
 
 	json_object_object_foreach(jobj, key, val) {
-		onionPrint(severity, "%s : ", key);
+		onionPrint(severity, "%s%s : ", tab, key);
 		type = json_object_get_type(val);
 
 		switch (type) {
@@ -21,13 +22,17 @@ void jsonPrint (int severity, json_object *jobj)
 			case json_type_int:
 			    onionPrint(severity, "%d (int)\n", json_object_get_int(val) );
 			    break;
-			case json_type_object:
-			    jobj = json_object_object_get(jobj, key);
-			    jsonPrint(severity, jobj);
-			    break;
 			case json_type_string:
 			    onionPrint(severity, "\"%s\"\n", json_object_get_string(val) );
 			    break;
+			case json_type_object:
+				// increment the tab
+				sprintf(tabNext, "%s\t", tab);
+
+				onionPrint(severity, "\n");
+				jobj = json_object_object_get(jobj, key);
+				jsonPrint(severity, jobj, tabNext);
+				break;
 		}
 	}
 }

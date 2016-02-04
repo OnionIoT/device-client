@@ -7,10 +7,12 @@
 
 #include <onion-debug.h>
 
+#include <device-client-types.h>
+
 #include "json-c/json.h"
 
 
-void 			jsonPrint			(int severity, json_object *jobj);
+void 			jsonPrint			(int severity, json_object *jobj, char* tab);
 int 			jsonGetString 		(json_object *jobj, char* value);
 
 
