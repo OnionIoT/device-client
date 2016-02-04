@@ -56,9 +56,39 @@ int dcProcessRecvCommand (json_object *jobj)
 	return 	status;
 }
 
+
+// populate response structure
+int dcGenerateResponseUrl (json_object *jobj, char* respUrl)
+{
+	int 	status;
+	char	eventId[STRING_LENGTH];
+	char	url[STRING_LENGTH];
+	char	postPath[STRING_LENGTH];
+
+	json_object 	*jret;
+
+	onionPrint(ONION_SEVERITY_INFO, "> Sending response to device-server\n"); 
+
+	// parse the event id
+	status 	= 	json_object_object_get_ex(jobj, JSON_REQUEST_EVENT_ID_KEY, &jret);
+	if (status != 0) {
+		// read the strings from the objects
+		status	= 	jsonGetString(jret, &eventId );
+	}
+	else {
+		return EXIT_FAILURE;
+	}
+
+	// generate the URL to receive the post:
+	//	ds.onion.io/<deviceId>/reply/<eventId>
+	sprintf(postPath, REPLY_PATH_TEMPLATE, dcInfo.devId, eventId, dcInfo.key);
+	sprintf(respUrl, "%s%s", dcInfo.host, postPath);
+
+	return EXIT_SUCCESS;
+}
+
 // process a requested ubus command
-// LAZAR: add json object for ubus return
-int dcProcessUbusCommand (json_object *jobj)
+int dcProcessUbusCommand (json_object *jobj, char* respUrl)
 {
 	int 			status;
 	json_object 	*jGroup;
@@ -93,7 +123,7 @@ int dcProcessUbusCommand (json_object *jobj)
 			onionPrint(ONION_SEVERITY_DEBUG, ">> Parameters: '%s'\n", param);
 
 			// make the ubus call
-			status = ubusCall(group, method, param);
+			status = ubusCall(group, method, param, respUrl);
 		}
 
 		// clean-up the ubus blob msg
@@ -103,61 +133,26 @@ int dcProcessUbusCommand (json_object *jobj)
 	return 	status;
 }
 
-// send a response to the server
-int dcSendResponse (json_object *jobj)
-{
-	int 	status;
-	char	eventId[STRING_LENGTH];
-	char	url[STRING_LENGTH];
-	char	postPath[STRING_LENGTH];
-	char	postData[STRING_LENGTH];
-
-	json_object 	*jret;
-
-	onionPrint(ONION_SEVERITY_INFO, "> Sending response to device-server\n"); 
-
-	// parse the event id
-	status 	= 	json_object_object_get_ex(jobj, JSON_REQUEST_EVENT_ID_KEY, &jret);
-	if (status != 0) {
-		// read the strings from the objects
-		status	= 	jsonGetString(jret, &eventId);
-	}
-	else {
-		return EXIT_FAILURE;
-	}
-
-	// generate the URL to receive the post:
-	//	ds.onion.io/<deviceId>/reply/<eventId>
-	sprintf(postPath, REPLY_PATH_TEMPLATE, dcInfo.devId, eventId, dcInfo.key);
-	sprintf(url, "%s%s", dcInfo.host, postPath);
-
-	// generate the data to POST
-	sprintf(postData, "{\"success\":\"OK\"}");
-
-	// send the POST
-	status 	= curlPost(url, postData);
-
-
-	return 	status;
-}
 
 // threading function to carry out ubus command and send response
 void *dcResponseThread(void *arg)
 {
 	int 			status;
 	json_object 	*jobj;
+	char 			respUrl[BUFFER_LENGTH];
 
 	onionPrint(ONION_SEVERITY_DEBUG, "\n>> RESPONSE THREAD!\n");
 
 	// convert the argument to json object
 	jobj 	= (json_object*)arg;
 
+	// setup the response to the server
+	status 	= dcGenerateResponseUrl(jobj, &respUrl);
+
 	// carry out the ubus command
-	status 	= dcProcessUbusCommand(jobj);
-
-	// send the response to the server
-	status 	= dcSendResponse(jobj);
-
+	if (status == EXIT_SUCCESS) {
+		status 	= dcProcessUbusCommand(jobj, &respUrl);
+	}
 
 	return NULL;
 }

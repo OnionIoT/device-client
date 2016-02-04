@@ -17,7 +17,7 @@
 void 			ubusInit		();
 void 			ubusFree		();
 
-int 			ubusCall 		(char* group, char* method, char* params);
+int 			ubusCall 		(char* group, char* method, char* params, char* respUrl);
 
 
 #endif // _UBUS_INTF_H_ 

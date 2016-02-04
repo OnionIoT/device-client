@@ -11,7 +11,6 @@
 #define DEBUG_SERVER 				"http://zh.onion.io:8081"
 
 #define LISTEN_PATH_TEMPLATE 		"/%s/listen?key=%s"
-//#define REPLY_PATH_TEMPLATE 		"/%s/reply?key=%s"
 #define REPLY_PATH_TEMPLATE 		"/%s/reply/%s?key=%s"
 #define REPLY_POST_TEMPLATE 		"key=%s"
 

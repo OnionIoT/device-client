@@ -21,7 +21,9 @@ int 	dcRun 							(char* devId, char* key, char* host);
 
 int 	dcProcessRecvCommand 			(json_object *jobj);
 
-int 	dcProcessUbusCommand 			(json_object *jobj);
+int 	dcGenerateResponseUrl			(json_object *jobj, char* respUrl);
+int 	dcProcessUbusCommand 			(json_object *jobj, char* respUrl);
+
 int 	dcSendResponse 					(json_object *jobj);
 
 
