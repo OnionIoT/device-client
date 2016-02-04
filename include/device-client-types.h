@@ -14,10 +14,15 @@
 #define REPLY_PATH_TEMPLATE 		"/%s/reply/%s?key=%s"
 #define REPLY_POST_TEMPLATE 		"key=%s"
 
+#define JSON_REQUEST_COMMAND_KEY	"cmd"
 #define JSON_REQUEST_GROUP_KEY		"group"
 #define JSON_REQUEST_METHOD_KEY		"method"
 #define JSON_REQUEST_PARAM_KEY		"param"
 #define JSON_REQUEST_EVENT_ID_KEY	"eventId"
+
+#define DEVICE_COMMAND_INIT 		"init"
+#define DEVICE_COMMAND_HEARTBEAT	"heartbeat"
+#define DEVICE_COMMAND_UBUS 		"ubus"
 
 // Data structures
 struct deviceClientInfo {

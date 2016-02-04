@@ -34,8 +34,8 @@ int dcRun (char* devId, char* key, char* host)
 int dcProcessRecvCommand (json_object *jobj)
 {
 	int 			status 	= EXIT_FAILURE;
-	json_object 	*jGroup;
-	json_object 	*jMethod;
+	char			cmd[STRING_LENGTH];
+	json_object 	*jCmd;
 
 	pthread_t 		pth;
 
@@ -43,13 +43,26 @@ int dcProcessRecvCommand (json_object *jobj)
 	jsonPrint(ONION_SEVERITY_DEBUG, jobj, "");
 
 	// check the received json for the 'group' and 'method' objects
-	status 	= 	json_object_object_get_ex(jobj, JSON_REQUEST_GROUP_KEY, &jGroup);
-	status 	|=	json_object_object_get_ex(jobj, JSON_REQUEST_METHOD_KEY, &jMethod);
+	status 	= 	json_object_object_get_ex(jobj, JSON_REQUEST_COMMAND_KEY, &jCmd);
 
-	// check if the 'group' and 'method' object are both found
+	// check if the 'cmd' object has been found
 	if (status != 0) {
-		// create thread
-		pthread_create(&pth, NULL, dcResponseThread, jobj); 
+		// parse the command string
+		status	= 	jsonGetString(jCmd, &cmd );
+
+		if (status == EXIT_FAILURE) {
+			return status;
+		}
+
+		// read the command
+		if (strncmp(cmd, DEVICE_COMMAND_UBUS, strlen(DEVICE_COMMAND_UBUS)) == 0 ) {
+			/// UBUS COMMAND
+			// create thread to run ubus command and send post response
+			pthread_create(&pth, NULL, dcResponseThread, jobj); 
+		}
+	}
+	else {
+		status 	= EXIT_FAILURE;
 	}
 	
 
