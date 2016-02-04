@@ -65,7 +65,6 @@ void ubusDataCallback(struct ubus_request *req, int type, struct blob_attr *msg)
 {
 	int 	status;
 	char 	*body;
-	//char 	*respUrl;
 	char 	respUrl[BUFFER_LENGTH];
 
 	// check for valid response
@@ -77,14 +76,11 @@ void ubusDataCallback(struct ubus_request *req, int type, struct blob_attr *msg)
 	strcpy(respUrl, (char *)req->priv);
 
 	// convert the blobmsg json to a string
-	body = blobmsg_format_json_indent(msg, true, 0);
-	//body = blobmsg_format_json(msg, false);
+	body = blobmsg_format_json(msg, true);
 
 	// send the curl response
 	status 	= curlPost(respUrl, body);
 	
-
-	
+	// clean-up
 	free(body);
-	//printf (">> freed str: '%s'\n", *(char *)req->priv);
 }
