@@ -66,11 +66,12 @@ int dcProcessUbusCommand (json_object *jobj)
 	json_object 	*jParam;
 	char			group[STRING_LENGTH];
 	char			method[STRING_LENGTH];
+	const char		*param;
 
 	// check the received json for the 'group' and 'method' objects
 	status 	= 	json_object_object_get_ex(jobj, JSON_REQUEST_GROUP_KEY,  &jGroup);
 	status 	|=	json_object_object_get_ex(jobj, JSON_REQUEST_METHOD_KEY, &jMethod);
-	//status 	|=	json_object_object_get_ex(jobj, JSON_REQUEST_PARAM_KEY,  &jParam);
+	status 	|=	json_object_object_get_ex(jobj, JSON_REQUEST_PARAM_KEY,  &jParam);
 
 	// check if the 'group' and 'method' object are both found
 	if (status != 0) {
@@ -84,14 +85,15 @@ int dcProcessUbusCommand (json_object *jobj)
 		status	|= 	jsonGetString(jMethod, &method);
 
 		// convert param object to string
-		// LAZAR: implement this
+		param 	= json_object_to_json_string(jParam);	
 
 		// check that strings were read properly
 		if (status == EXIT_SUCCESS) {
-			onionPrint(ONION_SEVERITY_INFO, ">> Received command request for '%s' group, '%s' function\n", group, method);
+			onionPrint(ONION_SEVERITY_INFO, "> Received command request for '%s' group, '%s' function\n", group, method);
+			onionPrint(ONION_SEVERITY_DEBUG, ">> Parameters: '%s'\n", param);
 
 			// make the ubus call
-			status = ubusCall(group, method, "{}");	//LAZAR: change the "" to params 
+			status = ubusCall(group, method, param);
 		}
 
 		// clean-up the ubus blob msg

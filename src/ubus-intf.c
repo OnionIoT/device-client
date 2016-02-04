@@ -28,7 +28,6 @@ int ubusCall (char* group, char* method, char* params)
 	int 	groupId;
 	char 	*ubus_socket;
 	struct 	ubus_context 		*ctx;
-	struct 	blob_buf 			bMsg;
 
 	// initialize ubus context
 	ctx 	= ubus_connect(ubus_socket);
@@ -36,10 +35,6 @@ int ubusCall (char* group, char* method, char* params)
 	if (!ctx) {
 		return EXIT_FAILURE;
 	}
-
-	// initialize the msg
-	//onionPrint(ONION_SEVERITY_DEBUG_EXTRA, ">>> Running blob_buf_init\n");
-	//blob_buf_init(&bMsg, 0);
 
 	// lookup the ubus group
 	onionPrint(ONION_SEVERITY_DEBUG_EXTRA, ">>> Running ubus_lookup_id\n");
@@ -58,9 +53,6 @@ int ubusCall (char* group, char* method, char* params)
 		status 	= ubus_invoke(	ctx, groupId, method, 					// ubus context, group id, method string
 								gMsg.head, ubusProcessResultData, NULL,		// blob attr, handler function, priv
 								30000);		// timeout
-
-		// clean-up
-		//blob_buf_free(&bMsg);
 	}
 
 	// clean-up
