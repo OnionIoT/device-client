@@ -4,7 +4,8 @@
 struct 	blob_buf 	gMsg;
 
 // function prototypes
-void ubusDataCallback(struct ubus_request *req, int type, struct blob_attr *msg);
+int 	ubusErrorResponse	(int ubusStatus, char *respUrl);
+void 	ubusDataCallback	(struct ubus_request *req, int type, struct blob_attr *msg);
 
 
 // initialize the blob_buf
@@ -43,9 +44,8 @@ int ubusCall (char* group, char* method, char* params, char* respUrl)
 	if (status == EXIT_SUCCESS) {
 		// add the params 
 		if (!blobmsg_add_json_from_string(&gMsg, params) ) {
-			onionPrint(ONION_SEVERITY_FATAL, "ERROR: Failed to parse ubus parameter data\n");
-			status 	= curlPost(respUrl, "{\"error\":\"invalid ubus parameter data\"}");
-			status	= EXIT_FAILURE;
+			
+			status	= ubusErrorResponse(UBUS_STATUS_INVALID_ARGUMENT, respUrl);
 		}
 
 		// make the ubus call
@@ -54,17 +54,83 @@ int ubusCall (char* group, char* method, char* params, char* respUrl)
 			status 	= ubus_invoke(	ctx, groupId, method, 					// ubus context, group id, method string
 									gMsg.head, ubusDataCallback, respUrl,	// blob attr, handler function, priv
 									30000);		// timeout
+
+			// check the status
+			ubusErrorResponse(status, respUrl);
 		}
 	}
 	else {
 		// respond to server saying error finding group
-		onionPrint(ONION_SEVERITY_FATAL, "ERROR: Requesting invalid ubus group\n");
-		status 	= curlPost(respUrl, "{\"error\":\"invalid ubus group\"}");
-		status 	= EXIT_FAILURE;
+		status 	= ubusErrorResponse(UBUS_STATUS_INVALID_COMMAND, respUrl);
 	}
 
 	// clean-up
 	ubus_free (ctx);
+
+	return 	status;
+}
+
+// respond to server with error message
+int ubusErrorResponse(int ubusStatus, char *respUrl)
+{
+	int 	status 	= EXIT_FAILURE;
+
+	switch (ubusStatus) {
+		case UBUS_STATUS_OK:
+			status 	= EXIT_SUCCESS;
+			break;
+
+		case UBUS_STATUS_INVALID_COMMAND:
+			onionPrint(ONION_SEVERITY_FATAL, "ERROR: Requesting invalid ubus group\n");
+			curlPost(respUrl, "{\"error\":\"invalid ubus group\"}");
+			break;
+
+		case UBUS_STATUS_INVALID_ARGUMENT:
+			onionPrint(ONION_SEVERITY_FATAL, "ERROR: Failed to parse ubus parameter data\n");
+			curlPost(respUrl, "{\"error\":\"invalid ubus parameter data\"}");
+			break;
+
+		case UBUS_STATUS_METHOD_NOT_FOUND:
+			onionPrint(ONION_SEVERITY_FATAL, "ERROR: Requesting invalid ubus method\n");
+			curlPost(respUrl, "{\"error\":\"invalid ubus method\"}");
+			break;
+
+		case UBUS_STATUS_NOT_FOUND:
+			onionPrint(ONION_SEVERITY_FATAL, "ERROR: ubus not found\n");
+			curlPost(respUrl, "{\"error\":\" ubus not found\"}");
+			break;
+
+		case UBUS_STATUS_NO_DATA:
+			onionPrint(ONION_SEVERITY_FATAL, "ERROR: ubus: no data\n");
+			curlPost(respUrl, "{\"error\":\" ubus: no data\"}");
+			break;
+
+		case UBUS_STATUS_PERMISSION_DENIED:
+			onionPrint(ONION_SEVERITY_FATAL, "ERROR: ubus permission denied\n");
+			curlPost(respUrl, "{\"error\":\" ubus permission denied\"}");
+			break;
+
+		case UBUS_STATUS_TIMEOUT:
+			onionPrint(ONION_SEVERITY_FATAL, "ERROR: ubus timeout\n");
+			curlPost(respUrl, "{\"error\":\" ubus timeout\"}");
+			break;
+
+		case UBUS_STATUS_NOT_SUPPORTED:
+			onionPrint(ONION_SEVERITY_FATAL, "ERROR: ubus not supported\n");
+			curlPost(respUrl, "{\"error\":\" ubus not supported\"}");
+			break;
+
+		case UBUS_STATUS_CONNECTION_FAILED:
+			onionPrint(ONION_SEVERITY_FATAL, "ERROR: ubus connection failed\n");
+			curlPost(respUrl, "{\"error\":\" ubus connection failed\"}");
+			break;
+
+		case UBUS_STATUS_UNKNOWN_ERROR:
+		default:
+			onionPrint(ONION_SEVERITY_FATAL, "ERROR: ubus unknown error\n");
+			curlPost(respUrl, "{\"error\":\" ubus unknown error\"}");
+			break;
+	}
 
 	return 	status;
 }
