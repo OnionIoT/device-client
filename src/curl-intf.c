@@ -1,4 +1,4 @@
-#include <curl-communication.h>
+#include <curl-intf.h>
 #include "curl/curl.h"
 
 /* Auxiliary function that waits on the socket. */ 

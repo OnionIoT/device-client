@@ -10,7 +10,6 @@
 
 #include <device-client-types.h>
 
-#include "curl/curl.h"
 #include "json-c/json.h"
 
 

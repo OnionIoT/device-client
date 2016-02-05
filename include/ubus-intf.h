@@ -9,6 +9,7 @@
 #include <onion-debug.h>
 
 #include <device-client-types.h>
+#include <curl-intf.h>
 
 
 void 			ubusInit		();

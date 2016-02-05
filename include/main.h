@@ -8,14 +8,8 @@
 
 #include <onion-debug.h>
 
-#include <curl-communication.h>
 #include <device-client-types.h>
-
-#include "libubus.h"
-
-
-// Function declarations
-//int sendReply (ReplyObj reply);
+#include <device-client.h>
 
 
 #endif // _DEVICE_CLIENT_MAIN_H_ 
