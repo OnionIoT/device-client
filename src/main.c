@@ -12,6 +12,7 @@ int main(int argc, char** argv)
 	int 		ch;
 	int 		verbose, debug;
 
+	int 		bRun;
 	char		*deviceId, *key;
 	char 		*host;
 
@@ -75,8 +76,11 @@ int main(int argc, char** argv)
 	status	= dcGetIdentity(deviceId, key);
 
 	// launch the device client
+	bRun 	= 1;
 	if (status == EXIT_SUCCESS) {
-		status 	= dcRun(deviceId, key, host);
+		while (bRun) {
+			status 	= dcRun(deviceId, key, host);
+		}
 	}
 
 	//* clean-up *//
