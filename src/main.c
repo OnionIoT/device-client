@@ -49,7 +49,7 @@ int main(int argc, char** argv)
 	//argv	+= optind;
 
 
-	// debug options
+	// debugging options
 	host 	= malloc(STRING_LENGTH * sizeof *host);
 	if (debug == 0) {
 		strncpy(host, DEVICE_SERVER, strlen(DEVICE_SERVER) );
