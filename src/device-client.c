@@ -3,6 +3,38 @@
 // global variable
 struct 	deviceClientInfo	dcInfo;
 
+// function prototypes
+void 	*dcIdentityThread		(void *arg);
+void 	*dcResponseThread		(void *arg);
+
+
+// find deviceId and key
+int dcGetIdentity (char* devId, char* key)
+{
+	int 		status = EXIT_FAILURE;
+	pthread_t 	pth;
+	void*		info;
+
+	// launch thread to read device ID and key
+	pthread_create(&pth, NULL, dcIdentityThread, NULL);
+	pthread_join(pth, &info);
+
+	// check that the read succeeded
+	if 	(	info != NULL &&
+			strlen((*(struct deviceClientInfo*)info).devId) > 0 &&
+			strlen((*(struct deviceClientInfo*)info).key) > 0
+		)
+	{
+		strncpy(devId, 	(*(struct deviceClientInfo*)info).devId, 	strlen( (*(struct deviceClientInfo*)info).devId) );
+		strncpy(key, 	(*(struct deviceClientInfo*)info).key,		strlen( (*(struct deviceClientInfo*)info).key) );
+		onionPrint(ONION_SEVERITY_INFO, "> Omega identified as device '%s'\n", devId);
+		status = EXIT_SUCCESS;
+	}
+
+	free(info);
+	return 	status;
+}
+
 // main function to launch the listening service
 int dcRun (char* devId, char* key, char* host)
 {
@@ -156,6 +188,37 @@ int dcProcessUbusCommand (json_object *jobj, char* respUrl)
 	return 	status;
 }
 
+//// multi-threaded functions
+// threading function to carry out uci calls and find deviceId and key
+void *dcIdentityThread(void *arg)
+{
+	int 	status;
+	char 	option[STRING_LENGTH];
+	char 	value[STRING_LENGTH];
+	struct	deviceClientInfo	*info;
+
+	onionPrint(ONION_SEVERITY_DEBUG, "\n>> IDENTITY THREAD!\n");
+
+	// allocate the structure
+	info 	= malloc(sizeof *info);
+
+	// find the deviceId
+	sprintf(option, "%s.%s", UCI_ONION_IDENTITY_ROOT, UCI_ONION_IDENTITY_DEVICE_ID_OPTION);
+	status 	= uciGet(&option, &value);
+
+	if (status == EXIT_SUCCESS) {
+		strcpy(info->devId, value);
+	}
+
+	// find the key
+	sprintf(option, "%s.%s", UCI_ONION_IDENTITY_ROOT, UCI_ONION_IDENTITY_KEY_OPTION);
+	status 	= uciGet(&option, &value);
+	if (status == EXIT_SUCCESS) {
+		strcpy(info->key, value);
+	}
+
+	return 	(void*) info;
+}
 
 // threading function to carry out ubus command and send response
 void *dcResponseThread(void *arg)

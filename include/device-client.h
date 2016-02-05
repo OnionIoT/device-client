@@ -17,6 +17,7 @@
 
 
 // Function declarations
+int 	dcGetIdentity 					(char* devId, char* key);
 int 	dcRun 							(char* devId, char* key, char* host);
 
 int 	dcProcessRecvCommand 			(json_object *jobj);
@@ -24,10 +25,9 @@ int 	dcProcessRecvCommand 			(json_object *jobj);
 int 	dcGenerateResponseUrl			(json_object *jobj, char* respUrl);
 int 	dcProcessUbusCommand 			(json_object *jobj, char* respUrl);
 
-int 	dcSendResponse 					(json_object *jobj);
 
 
-void 	*dcResponseThread				(void *arg);
+
 
 
 #endif // _DEVICE_CLIENT_H_ 

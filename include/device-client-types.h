@@ -7,6 +7,10 @@
 #define STRING_LENGTH 				256
 #define BUFFER_LENGTH				1024
 
+#define UCI_ONION_IDENTITY_ROOT				"onion.identity"
+#define UCI_ONION_IDENTITY_DEVICE_ID_OPTION	"deviceId"
+#define UCI_ONION_IDENTITY_KEY_OPTION		"key"
+
 #define DEVICE_SERVER 				"ds.onion.io"
 #define DEBUG_SERVER 				"http://zh.onion.io:8081"
 
@@ -23,6 +27,7 @@
 #define DEVICE_COMMAND_INIT 		"init"
 #define DEVICE_COMMAND_HEARTBEAT	"heartbeat"
 #define DEVICE_COMMAND_UBUS 		"ubus"
+
 
 // Data structures
 struct deviceClientInfo {

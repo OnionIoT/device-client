@@ -12,6 +12,7 @@ int main(int argc, char** argv)
 	int 		ch;
 	int 		verbose, debug;
 
+	char		*deviceId, *key;
 	char 		*host;
 
 	// set defaults
@@ -64,15 +65,22 @@ int main(int argc, char** argv)
 	onionSetVerbosity(verbose);
 	// curl init
 	curlInit();
+	// allocate memory
+	deviceId 	= malloc(STRING_LENGTH * sizeof *deviceId);
+	key 	 	= malloc(STRING_LENGTH * sizeof *key);
+
 
 	//* program *//
 	// find the device id and key
-	// LAZAR: add this
+	status	= dcGetIdentity(deviceId, key);
 
 	// launch the device client
-	status 	= dcRun("dev1","key1", host);
+	if (status == EXIT_SUCCESS) {
+		status 	= dcRun(deviceId, key, host);
+	}
 
 	//* clean-up *//
+	free(host);
 	// curl cleanup
 	curlCleanup();
 	
