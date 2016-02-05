@@ -1,4 +1,6 @@
 #include <ubus-intf.h>
+#include "libubus.h"
+#include "libubox/blobmsg_json.h"
 
 // globals
 struct 	blob_buf 	gMsg;

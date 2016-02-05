@@ -1,4 +1,5 @@
 #include <uci-intf.h>
+#include "uci.h"
 
 int uciGet(char* option, char* value)
 {

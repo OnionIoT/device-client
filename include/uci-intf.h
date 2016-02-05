@@ -10,8 +10,6 @@
 
 #include <device-client-types.h>
 
-#include "uci.h"
-
 
 int 			uciGet 			(char* option, char* value);
 

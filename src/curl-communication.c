@@ -1,5 +1,5 @@
 #include <curl-communication.h>
-
+#include "curl/curl.h"
 
 /* Auxiliary function that waits on the socket. */ 
 static int wait_on_socket(curl_socket_t sockfd, int for_recv, long timeout_ms)
@@ -114,8 +114,8 @@ int curlListen (char* host, char* request)
  
 	if(CURLE_OK != res)
 	{
-	  onionPrint(ONION_SEVERITY_FATAL, "Error: %s\n", curl_easy_strerror(res));
-	  return EXIT_FAILURE;
+		onionPrint(ONION_SEVERITY_FATAL, "Error: %s\n", curl_easy_strerror(res));
+		return EXIT_FAILURE;
 	}
 
 	sockfd = sockextr;

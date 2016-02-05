@@ -10,9 +10,6 @@
 
 #include <device-client-types.h>
 
-#include "libubus.h"
-#include "libubox/blobmsg_json.h"
-
 
 void 			ubusInit		();
 void 			ubusFree		();
