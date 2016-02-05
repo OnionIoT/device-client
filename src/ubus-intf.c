@@ -44,14 +44,23 @@ int ubusCall (char* group, char* method, char* params, char* respUrl)
 		// add the params 
 		if (!blobmsg_add_json_from_string(&gMsg, params) ) {
 			onionPrint(ONION_SEVERITY_FATAL, "ERROR: Failed to parse ubus parameter data\n");
-			return EXIT_FAILURE;
+			status 	= curlPost(respUrl, "{\"error\":\"invalid ubus parameter data\"}");
+			status	= EXIT_FAILURE;
 		}
 
 		// make the ubus call
-		onionPrint(ONION_SEVERITY_DEBUG, ">> Launching ubus call\n");
-		status 	= ubus_invoke(	ctx, groupId, method, 					// ubus context, group id, method string
-								gMsg.head, ubusDataCallback, respUrl,	// blob attr, handler function, priv
-								30000);		// timeout
+		if (status == EXIT_SUCCESS) {
+			onionPrint(ONION_SEVERITY_DEBUG, ">> Launching ubus call\n");
+			status 	= ubus_invoke(	ctx, groupId, method, 					// ubus context, group id, method string
+									gMsg.head, ubusDataCallback, respUrl,	// blob attr, handler function, priv
+									30000);		// timeout
+		}
+	}
+	else {
+		// respond to server saying error finding group
+		onionPrint(ONION_SEVERITY_FATAL, "ERROR: Requesting invalid ubus group\n");
+		status 	= curlPost(respUrl, "{\"error\":\"invalid ubus group\"}");
+		status 	= EXIT_FAILURE;
 	}
 
 	// clean-up
