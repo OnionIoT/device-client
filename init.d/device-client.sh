@@ -2,7 +2,7 @@
 # Copyright (C) 2016 Onion Corporation
 START=60
 
-BIN="device-client"
+BIN="/usr/bin/device-client"
 USE_PROCD=1
 
 start_service() {
