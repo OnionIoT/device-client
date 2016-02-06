@@ -11,6 +11,8 @@
 #include <device-client-types.h>
 #include <curl-intf.h>
 
+#define UBUS_COMBINED_CALL_TEMPLATE 		"%s::%s"
+
 
 void 			ubusInit		();
 void 			ubusFree		();
