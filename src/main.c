@@ -80,6 +80,7 @@ int main(int argc, char** argv)
 	if (status == EXIT_SUCCESS) {
 		while (bRun) {
 			status 	= dcRun(deviceId, key, host);
+			sleep(5);
 		}
 	}
 
