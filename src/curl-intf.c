@@ -117,6 +117,10 @@ int curlListen (char* host, char* request)
 		onionPrint(ONION_SEVERITY_FATAL, "Error: %s\n", curl_easy_strerror(res));
 		return EXIT_FAILURE;
 	}
+	if (sockextr == -1) {
+		onionPrint(ONION_SEVERITY_FATAL, "Error: invalid socket!\n", curl_easy_strerror(res));
+		return EXIT_FAILURE;
+	}
 
 	sockfd = sockextr;
  
@@ -132,10 +136,15 @@ int curlListen (char* host, char* request)
 	/* Send the request. Real applications should check the iolen
 	 * to see if all the request has been sent */ 
 	res = curl_easy_send(req, request, strlen(request), &iolen);
+	onionPrint(ONION_SEVERITY_DEBUG_EXTRA, "> Expected to send %d bytes, sent %d bytes\n", strlen(request), iolen);
  
 	if(CURLE_OK != res)
 	{
 		onionPrint(ONION_SEVERITY_FATAL, "Error: %s\n", curl_easy_strerror(res));
+		return EXIT_FAILURE;
+	}
+	if (iolen != strlen(request)) {
+		onionPrint(ONION_SEVERITY_FATAL, "Error: Expected to send %d bytes, sent %d bytes\n", strlen(request), iolen);
 		return EXIT_FAILURE;
 	}
 	
