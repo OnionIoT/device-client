@@ -72,6 +72,9 @@ int main(int argc, char** argv)
 
 
 	//* program *//
+	printf("WOW\n");
+	printf(">>> VER: %s\n", STRING(DEVICE_CLIENT_VERSION));	
+	//printf(">>> TYPE: %s\n", DEVICE_TYPE);	
 	// find the device id and key
 	status	= dcGetIdentity(deviceId, key);
 
@@ -82,6 +85,9 @@ int main(int argc, char** argv)
 			status 	= dcRun(deviceId, key, host);
 			sleep(5);
 		}
+	}
+	else {
+		onionPrint(ONION_SEVERITY_FATAL, "ERROR: Could not read device ID and secret key!\n");
 	}
 
 	//* clean-up *//

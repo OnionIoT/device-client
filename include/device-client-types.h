@@ -4,6 +4,20 @@
 
 
 // Macro definitions
+#define STRING(s) #s
+
+#ifndef DEVICE_CLIENT_VERSION
+#define DEVICE_CLIENT_VERSION		"vX"
+#else
+//#define DEVICE_CLIENT_VERSION 		"DEVICE_CLIENT_VERSION"
+#endif
+
+#ifndef DEVICE_TYPE
+#define DEVICE_TYPE					"UNKNOWN"
+#else
+//#define DEVICE_TYPE 				"DEVICE_TYPE"
+#endif
+
 #define STRING_LENGTH 				256
 #define BUFFER_LENGTH				1024
 

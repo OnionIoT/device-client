@@ -17,7 +17,7 @@ int uciGet(char* option, char* value)
 	// uci look-up
 	if ( uci_lookup_ptr(ctx, &ptr, option, true) == UCI_OK ) {
 		// get the option value
-		if (ptr.target == UCI_TYPE_OPTION) {
+		if (ptr.target == UCI_TYPE_OPTION && ptr.o != NULL) {
 			strncpy(value, ptr.o->v.string, strlen(ptr.o->v.string) );
 			onionPrint(ONION_SEVERITY_DEBUG_EXTRA, ">> uci get '%s' success: '%s'\n", option, value);
 			status 	= EXIT_SUCCESS;
