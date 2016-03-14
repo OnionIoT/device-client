@@ -83,6 +83,7 @@ int curlListen (char* host, char* request)
 	CURL 		*req;
 	CURLcode 	res;
 	int 		status	= EXIT_SUCCESS;
+	char 		errbuf[CURL_ERROR_SIZE];
 
 
 	/* Minimalistic http request */ 
@@ -97,10 +98,14 @@ int curlListen (char* host, char* request)
 		return EXIT_FAILURE;
 	}
 
-	// set the URL
+	// set the URL and options
 	curl_easy_setopt(req, CURLOPT_URL, host);
 	// 	curl_easy_setopt(req, CURLOPT_TIMEOUT, 30L);
 	curl_easy_setopt(req, CURLOPT_CONNECT_ONLY, 1L);
+	curl_easy_setopt(req, CURLOPT_ERRORBUFFER, errbuf);
+
+	// empty out the error buffer
+	errbuf[0] = 0;
 
 	// perform the action
 	onionPrint(ONION_SEVERITY_DEBUG, ">> Connecting to host '%s' to listen\n", host);
@@ -140,7 +145,7 @@ int curlListen (char* host, char* request)
  
 	if(CURLE_OK != res)
 	{
-		onionPrint(ONION_SEVERITY_FATAL, "Error: %s\n", curl_easy_strerror(res));
+		onionPrint(ONION_SEVERITY_FATAL, "Error: %s (%d)\n", errbuf, res);
 		return EXIT_FAILURE;
 	}
 	if (iolen != strlen(request)) {
@@ -155,11 +160,15 @@ int curlListen (char* host, char* request)
 		char buf[BUFFER_LENGTH];
 		memset(&buf[0], 0, sizeof(buf));	// clear the buffer
 
+		// empty out the error buffer
+		errbuf[0] = 0;
+
 		onionPrint(ONION_SEVERITY_DEBUG, ">> Waiting on socket...\n");
 		wait_on_socket(sockfd, 1, 60000L);
 		res = curl_easy_recv(req, buf, BUFFER_LENGTH, &iolen);
 
 		if(CURLE_OK != res) {
+			onionPrint(ONION_SEVERITY_FATAL, "Error: %s (%d)\n", errbuf, res);
 			break;
 		}
 
