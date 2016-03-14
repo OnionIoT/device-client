@@ -72,9 +72,6 @@ int main(int argc, char** argv)
 
 
 	//* program *//
-	printf("WOW\n");
-	printf(">>> VER: %s\n", STRING(DEVICE_CLIENT_VERSION));	
-	//printf(">>> TYPE: %s\n", DEVICE_TYPE);	
 	// find the device id and key
 	status	= dcGetIdentity(deviceId, key);
 

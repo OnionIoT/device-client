@@ -22,6 +22,9 @@ OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 
 # flags
 CFLAGS := -g -lz # -Wall
+DEVICE_CLIENT_VERSION := "0.x"
+DEVICE_TYPE := "unknown"
+override CFLAGS += -D 'DEVICE_CLIENT_VERSION="$(DEVICE_CLIENT_VERSION)"' -D 'DEVICE_TYPE="$(DEVICE_TYPE)"'
 
 INC := $(shell find $(INCDIR) -maxdepth 1 -type d -exec echo -I {}  \;)
 #LIB := $(LIB) -L$(LIBDIR) -loniondebug -lonioni2c
@@ -56,7 +59,7 @@ clean:
 
 info:
 	@echo "CC: $(CC)"
-	@echo "CCFLAGS: $(CCFLAGS)"
+	@echo "CFLAGS: $(CFLAGS)"
 	@echo "LDFLAGS: $(LDFLAGS)"
 	@echo "LIB: $(LIB)"
 	@echo "INC: $(INC)"
@@ -66,7 +69,7 @@ info:
 
 # Tests
 tester:
-	$(CC) $(CCFLAGS) test/tester.cpp $(INC) $(LIB) -o bin/tester
+	$(CC) $(CFLAGS) test/tester.cpp $(INC) $(LIB) -o bin/tester
 
 # Spikes
 #ticket:
