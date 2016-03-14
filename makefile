@@ -22,8 +22,8 @@ OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 
 # flags
 CFLAGS := -g -lz # -Wall
-DEVICE_CLIENT_VERSION := "0.x"
-DEVICE_TYPE := "unknown"
+DEVICE_CLIENT_VERSION := "0.0"
+DEVICE_TYPE := "UNKNOWN"
 override CFLAGS += -D 'DEVICE_CLIENT_VERSION="$(DEVICE_CLIENT_VERSION)"' -D 'DEVICE_TYPE="$(DEVICE_TYPE)"'
 
 INC := $(shell find $(INCDIR) -maxdepth 1 -type d -exec echo -I {}  \;)

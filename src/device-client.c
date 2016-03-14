@@ -6,6 +6,7 @@ struct 	deviceClientInfo	dcInfo;
 // function prototypes
 void 	*dcIdentityThread		(void *arg);
 void 	*dcResponseThread		(void *arg);
+void 	dcRespondError 			(char* url, char *msg);
 
 
 // find deviceId and key
@@ -76,36 +77,9 @@ int dcProcessRecvCommand (json_object *jobj)
 
 	jsonPrint(ONION_SEVERITY_DEBUG, jobj, "");
 
-	// check the received json for the 'group' and 'method' objects
-	status 	= 	json_object_object_get_ex(jobj, JSON_REQUEST_COMMAND_KEY, &jCmd);
 
-	// check if the 'cmd' object has been found
-	if (status != 0) {
-		// parse the command string
-		status	= 	jsonGetString(jCmd, &cmd );
-
-		if (status == EXIT_FAILURE) {
-			return status;
-		}
-
-		// read the command
-		if (strncmp(cmd, DEVICE_COMMAND_UBUS, strlen(DEVICE_COMMAND_UBUS)) == 0 ) {
-			//// UBUS COMMAND
-			// create thread to run ubus command and send post response
-			pthread_create(&pth, NULL, dcResponseThread, jobj); 
-		}
-		else if (strncmp(cmd, DEVICE_COMMAND_INIT, strlen(DEVICE_COMMAND_INIT)) == 0 ) {
-			//// INIT CONNECTION
-			onionPrint(ONION_SEVERITY_INFO, "    > Connection initialized\n");
-		}
-		else if (strncmp(cmd, DEVICE_COMMAND_HEARTBEAT, strlen(DEVICE_COMMAND_HEARTBEAT)) == 0 ) {
-			//// HEARTBEAT
-			onionPrint(ONION_SEVERITY_INFO, "    > Connection heartbeat\n");
-		}
-	}
-	else {
-		status 	= EXIT_FAILURE;
-	}
+	// create thread to process the command and send post response
+	pthread_create(&pth, NULL, dcResponseThread, jobj); 
 	
 
 	return 	status;
@@ -113,7 +87,7 @@ int dcProcessRecvCommand (json_object *jobj)
 
 
 // populate response structure
-int dcGenerateResponseUrl (json_object *jobj, char* respUrl)
+int dcGenerateResponseUrl (json_object *jobj, char* respUrl, char* id)
 {
 	int 	status;
 	char	eventId[STRING_LENGTH];
@@ -131,7 +105,9 @@ int dcGenerateResponseUrl (json_object *jobj, char* respUrl)
 		status	= 	jsonGetString(jret, &eventId );
 	}
 	else {
-		return EXIT_FAILURE;
+		// use the command argument as the id
+		//strncpy(eventId, id, strlen(id) );
+		strcpy(eventId, id);
 	}
 
 	// generate the URL to receive the post:
@@ -188,6 +164,17 @@ int dcProcessUbusCommand (json_object *jobj, char* respUrl)
 	return 	status;
 }
 
+// respond with an error
+void dcRespondError (char* url, char *msg)
+{
+	int 	status;
+	char 	resp[BUFFER_LENGTH];
+
+	// generate and send the error response
+	sprintf(resp, RESPONSE_ERROR_TEMPLATE, msg);
+	status 	= curlPost(url, resp);
+}
+
 //// multi-threaded functions
 // threading function to carry out uci calls and find deviceId and key
 void *dcIdentityThread(void *arg)
@@ -225,6 +212,8 @@ void *dcResponseThread(void *arg)
 {
 	int 			status;
 	json_object 	*jobj;
+	json_object 	*jCmd;
+	char			cmd[BUFFER_LENGTH];
 	char 			respUrl[BUFFER_LENGTH];
 
 	onionPrint(ONION_SEVERITY_DEBUG, "\n>> RESPONSE THREAD!\n");
@@ -232,13 +221,51 @@ void *dcResponseThread(void *arg)
 	// convert the argument to json object
 	jobj 	= (json_object*)arg;
 
-	// setup the response to the server
-	status 	= dcGenerateResponseUrl(jobj, &respUrl);
+	// read the command object
+	status 	= 	json_object_object_get_ex(jobj, JSON_REQUEST_COMMAND_KEY, &jCmd);
 
-	// carry out the ubus command
-	if (status == EXIT_SUCCESS) {
-		status 	= dcProcessUbusCommand(jobj, &respUrl);
+	if (status != 0) {
+		// parse the command string
+		status	= 	jsonGetString(jCmd, &cmd );
+
+		if (status == EXIT_FAILURE) {
+			dcRespondError (respUrl, "Could not read 'command' object!\n");
+			return NULL;
+		}
+
+		// setup the response to the server
+		status 	= dcGenerateResponseUrl(jobj, &respUrl, cmd);
+
+		// read the command
+		if (strncmp(cmd, DEVICE_COMMAND_UBUS, strlen(DEVICE_COMMAND_UBUS)) == 0 ) {
+			//// UBUS COMMAND
+			// carry out the ubus command
+			status 	= dcProcessUbusCommand(jobj, &respUrl);
+		}
+		else if (strncmp(cmd, DEVICE_COMMAND_INIT, strlen(DEVICE_COMMAND_INIT)) == 0 ) {
+			//// INIT CONNECTION
+			onionPrint(ONION_SEVERITY_INFO, "    > Connection initialized\n");
+
+			// generate and send the response
+			sprintf(cmd, RESPONSE_INIT_TEMPLATE, DEVICE_CLIENT_VERSION, DEVICE_TYPE);
+			status 	= curlPost(respUrl, cmd);
+		}
+		else if (strncmp(cmd, DEVICE_COMMAND_HEARTBEAT, strlen(DEVICE_COMMAND_HEARTBEAT)) == 0 ) {
+			//// HEARTBEAT
+			onionPrint(ONION_SEVERITY_INFO, "    > Connection heartbeat\n");
+			
+			// send the response
+			status 	= curlPost(respUrl, RESPONSE_HEARTBEAT_TEMPLATE);
+		}
+		else {
+			//// INVALID COMMAND
+			dcRespondError (respUrl, "Invalid command!\n");
+		}
 	}
+	else {
+		dcRespondError (respUrl, "Could not find 'command' object!\n");
+	}
+	
 
 	return NULL;
 }

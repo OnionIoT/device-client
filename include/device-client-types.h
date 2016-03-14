@@ -7,7 +7,7 @@
 #define STRING(s) #s
 
 #ifndef DEVICE_CLIENT_VERSION
-#define DEVICE_CLIENT_VERSION		"vX"
+#define DEVICE_CLIENT_VERSION		"0.0"
 #else
 //#define DEVICE_CLIENT_VERSION 		"DEVICE_CLIENT_VERSION"
 #endif
@@ -31,6 +31,10 @@
 #define LISTEN_PATH_TEMPLATE 		"/%s/listen?key=%s"
 #define REPLY_PATH_TEMPLATE 		"/%s/reply/%s?key=%s"
 #define REPLY_POST_TEMPLATE 		"key=%s"
+
+#define RESPONSE_INIT_TEMPLATE 			"{\"version\":\"%s\", \"device\":\"%s\"}"
+#define RESPONSE_HEARTBEAT_TEMPLATE 	"{\"heartbeat\":\"ok\"}"
+#define RESPONSE_ERROR_TEMPLATE 		"{\"error\":\"%s\"}"
 
 #define JSON_REQUEST_COMMAND_KEY	"cmd"
 #define JSON_REQUEST_GROUP_KEY		"group"
