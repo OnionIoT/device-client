@@ -17,6 +17,7 @@
 void 			ubusInit		();
 void 			ubusFree		();
 
+int 			ubusList 		(char* respUrl);
 int 			ubusCall 		(char* group, char* method, char* params, char* respUrl);
 
 

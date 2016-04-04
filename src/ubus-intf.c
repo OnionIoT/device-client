@@ -29,9 +29,11 @@ const char * const 	gUbusCallsWithNoResponse[] =
 
 // function prototypes
 int 	ubusErrorResponse	(int ubusStatus, char *respUrl);
+void 	ubusListCallback	(struct ubus_context *ctx, struct ubus_object_data *obj, void *priv);
 void 	ubusDataCallback	(struct ubus_request *req, int type, struct blob_attr *msg);
 void 	ubusGenerateGenericResponse		(int ubusStatus, char* group, char* method, char *respUrl);
 
+static const char 	*blobmsgFormatType		(void *priv, struct blob_attr *attr);
 
 // initialize the blob_buf
 void ubusInit()
@@ -45,6 +47,31 @@ void ubusFree()
 {
 	onionPrint(ONION_SEVERITY_DEBUG_EXTRA, ">>> Running blob_buf_free\n");
 	blob_buf_free(&gMsg);
+}
+
+// list ubus functions
+int ubusList (char* respUrl)
+{
+	int 	status;
+	char 	*ubus_socket;
+	struct 	ubus_context 		*ctx;
+
+	const char *path = NULL;
+
+	// initialize ubus context
+	ctx 	= ubus_connect(ubus_socket);
+
+	if (!ctx) {
+		return EXIT_FAILURE;
+	}
+
+	// call the ubus list function
+	ubus_lookup(ctx, path, ubusListCallback, respUrl);
+
+	// clean-up
+	ubus_free (ctx);
+
+	return 	status;
 }
 
 // call ubus function 
@@ -167,7 +194,29 @@ int ubusErrorResponse(int ubusStatus, char *respUrl)
 	return 	status;
 }
 
-// ubus handler
+//// ubus handler callbacks
+void ubusListCallback(struct ubus_context *ctx, struct ubus_object_data *obj, void *priv)
+{
+	// priv contains the respUrl
+
+	char 	respUrl[BUFFER_LENGTH];
+	struct blob_attr *cur;
+	char *s;
+	int rem;
+
+	printf("NEW CALLBACK!\n");
+	printf("'%s'\n", obj->path);
+
+	if (!obj->signature)
+		return;
+
+	blob_for_each_attr(cur, obj->signature, rem) {
+		s = blobmsg_format_json_with_cb(cur, false, blobmsgFormatType, NULL, -1);
+		printf("\t%s\n", s);
+		free(s);
+	}
+}
+
 void ubusDataCallback(struct ubus_request *req, int type, struct blob_attr *msg)
 {
 	int 	status;
@@ -215,4 +264,29 @@ void ubusGenerateGenericResponse(int ubusStatus, char* group, char* method, char
 			}
 		}
 	}
+}
+
+
+static const char *blobmsgFormatType(void *priv, struct blob_attr *attr)
+{
+	static const char * const attr_types[] = {
+		[BLOBMSG_TYPE_INT8] = "\"Boolean\"",
+		[BLOBMSG_TYPE_INT32] = "\"Integer\"",
+		[BLOBMSG_TYPE_STRING] = "\"String\"",
+		[BLOBMSG_TYPE_ARRAY] = "\"Array\"",
+		[BLOBMSG_TYPE_TABLE] = "\"Table\"",
+	};
+	const char *type = NULL;
+	int typeid;
+
+	if (blob_id(attr) != BLOBMSG_TYPE_INT32)
+		return NULL;
+
+	typeid = blobmsg_get_u32(attr);
+	if (typeid < ARRAY_SIZE(attr_types))
+		type = attr_types[typeid];
+	if (!type)
+		type = "\"(unknown)\"";
+
+	return type;
 }
