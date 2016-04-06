@@ -48,143 +48,8 @@ size_t onListenResponse (void *buffer, size_t size, size_t nmemb, void *userp){
 	printf(buffer);
 }
 
-int parseRecvData(int nread, char* buf)
-{
-	int 	i;
-	int 	status;
-	char 	*ref;
-	json_object 	*jobj;
-
-	// parse the json from the received data into a char
-	ref = &buf[0];
-	for(i =0; i<nread; i++){
-		if(ref[0]!='{'){
-			ref++;
-		}
-		else {
-			break;
-		}
-	}
-
-	onionPrint(ONION_SEVERITY_DEBUG_EXTRA, ">> Data:\n%s\n", ref);
-
-	// parse the char into a json object
-	if (strlen(ref) > 0) {
-		jobj = json_tokener_parse(ref);
-
-		// device client - process the command received from the server
-		status 	= dcProcessRecvCommand(jobj);
-	}	
-}
-
-// listen to device server
-int curlListenX (char* host, char* request)
-{
-	CURL 		*req;
-	CURLcode 	res;
-	int 		status	= EXIT_SUCCESS;
-	char 		errbuf[CURL_ERROR_SIZE];
-
-
-	/* Minimalistic http request */ 
-	curl_socket_t 	sockfd; /* socket */ 
-	long 			sockextr;
-	size_t 			iolen;
-	curl_off_t 		nread;
-	
-	// initialize request
-	req 	= curl_easy_init();
-	if(!req){
-		return EXIT_FAILURE;
-	}
-
-	// set the URL and options
-	curl_easy_setopt(req, CURLOPT_URL, host);
-	// 	curl_easy_setopt(req, CURLOPT_TIMEOUT, 30L);
-	curl_easy_setopt(req, CURLOPT_CONNECT_ONLY, 1L);
-	curl_easy_setopt(req, CURLOPT_ERRORBUFFER, errbuf);
-	curl_easy_setopt(req, CURLOPT_VERBOSE, 1L);
-
-	// empty out the error buffer
-	errbuf[0] = 0;
-
-	// perform the action
-	onionPrint(ONION_SEVERITY_DEBUG, ">> Connecting to host '%s' to listen\n", host);
-	res = curl_easy_perform(req);
-	if(CURLE_OK != res)
-	{
-		onionPrint(ONION_SEVERITY_FATAL, "Error: curl_easy_perform: %s (%d)\n", errbuf, res);
-		return EXIT_FAILURE;
-	}
-	res = curl_easy_getinfo(req, CURLINFO_LASTSOCKET, &sockextr);
- 
-	if(CURLE_OK != res)
-	{
-		onionPrint(ONION_SEVERITY_FATAL, "Error: curl_easy_getinfo: %s (%d)\n", errbuf, res);
-		return EXIT_FAILURE;
-	}
-	if (sockextr == -1) {
-		onionPrint(ONION_SEVERITY_FATAL, "Error: invalid socket!\n", curl_easy_strerror(res));
-		return EXIT_FAILURE;
-	}
-
-	sockfd = (curl_socket_t)sockextr;
- 
-	/* wait for the socket to become ready for sending */ 
-	if(!wait_on_socket(sockfd, 0, 60000L))
-	{
-	  onionPrint(ONION_SEVERITY_FATAL, "Error: timeout.\n");
-	  return EXIT_FAILURE;
-	}
-	
-	onionPrint(ONION_SEVERITY_INFO, "> Sending request.\n");
-	onionPrint(ONION_SEVERITY_DEBUG_EXTRA, "> Request: '%s'\n", request);
-	/* Send the request. Real applications should check the iolen
-	 * to see if all the request has been sent */ 
-	res = curl_easy_send(req, request, strlen(request), &iolen);
-	onionPrint(ONION_SEVERITY_DEBUG_EXTRA, "> Expected to send %d bytes, sent %d bytes\n", strlen(request), iolen);
- 
-	if(CURLE_OK != res)
-	{
-		onionPrint(ONION_SEVERITY_FATAL, "Error: curl_easy_send: %s (%d)\n", errbuf, res);
-		return EXIT_FAILURE;
-	}
-	if (iolen != strlen(request)) {
-		onionPrint(ONION_SEVERITY_FATAL, "Error: Expected to send %d bytes, sent %d bytes\n", strlen(request), iolen);
-		return EXIT_FAILURE;
-	}
-	
-	/* read the response */ 
-	onionPrint(ONION_SEVERITY_INFO, "> Reading response.\n");
-	for(;;)
-	{
-		char buf[BUFFER_LENGTH];
-		memset(&buf[0], 0, sizeof(buf));	// clear the buffer
-		errbuf[0] = 0;						// empty out the error buffer
-
-		onionPrint(ONION_SEVERITY_DEBUG, ">> Waiting on socket...\n");
-		wait_on_socket(sockfd, 1, 60000L);
-		res = curl_easy_recv(req, buf, BUFFER_LENGTH, &iolen);
-
-		if(CURLE_OK != res) {
-			onionPrint(ONION_SEVERITY_FATAL, "Error: curl_easy_recv: %s (%d)\n", errbuf, res);
-			break;
-		}
-
-		nread = (curl_off_t)iolen;
-
-		onionPrint(ONION_SEVERITY_INFO, "\n> Received %" CURL_FORMAT_CURL_OFF_T " bytes.\n", nread);
-		onionPrint(ONION_SEVERITY_DEBUG_EXTRA+1, ">> Received data: '%s'\n", buf);
-
-		// parse the json from the received data;
-		status 	= parseRecvData(nread, buf);
-	}
-	
-	curl_easy_cleanup(req);
-	return status;
-}
-
-size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
+// parse data received from the server
+size_t recvDataCallback(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
 	int 			status;
 	json_object 	*jobj;
@@ -214,6 +79,8 @@ size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
 }
 
 // listen to device server
+//	HTTP GET request w/ device id and secret
+// 	Callback to parse data received from the server
 int curlListen (char* host, char* request, int debugLevel)
 {
 	CURL 		*handle;
@@ -232,11 +99,11 @@ int curlListen (char* host, char* request, int debugLevel)
 	curl_easy_setopt(handle, CURLOPT_URL, getUrl);
 
 	// register write data callback to receive data from the server
-	curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_callback);
+	curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, recvDataCallback);
 
 	// set the debugging options
 	curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, errbuf);
-	if (debugLevel > 0) {
+	if (debugLevel >= DC_DEBUG_LEVEL_CURL) {
 		curl_easy_setopt(handle, CURLOPT_VERBOSE, 	1L);
 		//curl_easy_setopt(handle, CURLOPT_HEADER, 	1L);
 	}

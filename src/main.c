@@ -52,7 +52,7 @@ int main(int argc, char** argv)
 
 	// debugging options
 	host 	= malloc(STRING_LENGTH * sizeof *host);
-	if (debug < 2) {
+	if (debug < DC_DEBUG_LEVEL_SERVER) {
 		strncpy(host, DEVICE_SERVER, strlen(DEVICE_SERVER) );
 	}
 	else {
