@@ -37,7 +37,7 @@ int dcGetIdentity (char* devId, char* key)
 }
 
 // main function to launch the listening service
-int dcRun (char* devId, char* key, char* host)
+int dcRun (char* devId, char* key, char* host, int debugLevel)
 {
 	int 	status;
 	char 	listenPath[STRING_LENGTH];
@@ -57,7 +57,7 @@ int dcRun (char* devId, char* key, char* host)
 	sprintf(request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", listenPath, host);
 
 	// start listening to the device server
-	curlListen(host, request);
+	curlListen(host, listenPath, debugLevel);
 
 	onionPrint(ONION_SEVERITY_INFO, "> Connection lost!\n");
 

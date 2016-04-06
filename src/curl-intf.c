@@ -34,7 +34,7 @@ static int wait_on_socket(curl_socket_t sockfd, int for_recv, long timeout_ms)
 // global curl init
 int curlInit() 
 {
-	curl_global_init(CURL_GLOBAL_SSL);
+	curl_global_init(CURL_GLOBAL_ALL);
 }
 
 // global curl cleanup
@@ -78,7 +78,7 @@ int parseRecvData(int nread, char* buf)
 }
 
 // listen to device server
-int curlListen (char* host, char* request)
+int curlListenX (char* host, char* request)
 {
 	CURL 		*req;
 	CURLcode 	res;
@@ -184,6 +184,81 @@ int curlListen (char* host, char* request)
 	return status;
 }
 
+size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
+{
+	int 			status;
+	json_object 	*jobj;
+	size_t 			realSize = size * nmemb;
+
+	// find current system time
+	time_t t;
+    time(&t);
+
+	onionPrint(ONION_SEVERITY_DEBUG, ">> Write_callback: received '%d' bytes, time: '%s'\n", realSize, ctime(&t) );
+	if (realSize > 0) {
+		//onionPrint(ONION_SEVERITY_DEBUG, "   >> received data '%s'\n", ptr);
+
+		// attempt to parse the received data as json
+		jobj 	= json_tokener_parse(ptr);
+
+		if (jobj != NULL) {
+			onionPrint(ONION_SEVERITY_DEBUG, ">> Write_callback: valid json: '%s'\n", ptr);
+
+			// device client - process the command received from the server
+			status 	= dcProcessRecvCommand(jobj);
+		}
+	}
+
+
+	return 	realSize;
+}
+
+// listen to device server
+int curlListen (char* host, char* request, int debugLevel)
+{
+	CURL 		*handle;
+	CURLcode 	res;
+	int 		status	= EXIT_SUCCESS;
+	char 		errbuf[CURL_ERROR_SIZE];
+
+	char 		getUrl[STRING_LENGTH];
+
+
+	// init the curl session
+	handle 	= curl_easy_init();
+
+	// set the options
+	sprintf(getUrl, "%s/%s", host, request);
+	curl_easy_setopt(handle, CURLOPT_URL, getUrl);
+
+	// register write data callback to receive data from the server
+	curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_callback);
+
+	// set the debugging options
+	curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, errbuf);
+	if (debugLevel > 0) {
+		curl_easy_setopt(handle, CURLOPT_VERBOSE, 	1L);
+		//curl_easy_setopt(handle, CURLOPT_HEADER, 	1L);
+	}
+
+	// empty out the error buffer
+	errbuf[0] = 0;
+
+	// perform the action
+	onionPrint(ONION_SEVERITY_DEBUG, ">> Sending request to '%s'\n", getUrl);
+	res 	= curl_easy_perform(handle);
+	if(CURLE_OK != res)
+	{
+		onionPrint(ONION_SEVERITY_FATAL, "Error: curl_easy_perform: %s (%d)\n", errbuf, res);
+		return EXIT_FAILURE;
+	}
+
+	onionPrint(ONION_SEVERITY_DEBUG, ">> Completed GET\n");
+	
+	curl_easy_cleanup(handle);
+	return status;
+}
+
 // perform an http post operation
 int curlPost(char* url, char* postData)
 {
@@ -199,7 +274,7 @@ int curlPost(char* url, char* postData)
 
 	// check that the handle is ok
 	if(curl) {
-		/* set content type */
+		// set content type
 		headers = curl_slist_append(headers, "Accept: application/json");
 		headers = curl_slist_append(headers, "Content-Type: application/json");
 

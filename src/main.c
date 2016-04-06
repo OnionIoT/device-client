@@ -37,7 +37,7 @@ int main(int argc, char** argv)
 			break;
 		case 'd':
 			// debug mode
-			debug 	= 1;
+			debug++;
 			break;
 		default:
 			usage(progname);
@@ -52,7 +52,7 @@ int main(int argc, char** argv)
 
 	// debugging options
 	host 	= malloc(STRING_LENGTH * sizeof *host);
-	if (debug == 0) {
+	if (debug < 2) {
 		strncpy(host, DEVICE_SERVER, strlen(DEVICE_SERVER) );
 	}
 	else {
@@ -79,7 +79,7 @@ int main(int argc, char** argv)
 	bRun 	= 1;
 	if (status == EXIT_SUCCESS) {
 		while (bRun) {
-			status 	= dcRun(deviceId, key, host);
+			status 	= dcRun(deviceId, key, host, debug);
 			sleep(5);
 		}
 	}

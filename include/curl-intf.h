@@ -13,11 +13,15 @@
 #include "json-c/json.h"
 
 
+// lazar: debug
+#include <time.h>
+
+
 int 			curlInit		();
 int 			curlCleanup		();
 
 
-int 			curlListen 		(char* host, char* request);
+int 			curlListen 		(char* host, char* request, int debugLevel);
 int  			curlPost		(char* url, char* postData);
 
 #endif // _CURL_COMMUNICATION_H_ 

@@ -18,7 +18,7 @@
 
 // Function declarations
 int 	dcGetIdentity 					(char* devId, char* key);
-int 	dcRun 							(char* devId, char* key, char* host);
+int 	dcRun 							(char* devId, char* key, char* host, int debugLevel);
 
 int 	dcProcessRecvCommand 			(json_object *jobj);
 
