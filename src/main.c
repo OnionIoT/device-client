@@ -74,12 +74,15 @@ int main(int argc, char** argv)
 	//* program *//
 	// find the device id and key
 	status	= dcGetIdentity(deviceId, key);
+	// setup the device client
+	status 	|= dcSetup(deviceId, key, host);
 
 	// launch the device client
 	bRun 	= 1;
 	if (status == EXIT_SUCCESS) {
 		while (bRun) {
-			status 	= dcRun(deviceId, key, host, debug);
+			status 	= dcRun(debug);
+			onionPrint(ONION_SEVERITY_INFO, "  > Restarting connection...\n");
 			sleep(5);
 		}
 	}

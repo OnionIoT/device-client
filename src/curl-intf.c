@@ -49,7 +49,7 @@ size_t onListenResponse (void *buffer, size_t size, size_t nmemb, void *userp){
 }
 
 // parse data received from the server
-size_t recvDataCallback(char *ptr, size_t size, size_t nmemb, void *userdata)
+size_t recvDataCallbackOrig(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
 	int 			status;
 	json_object 	*jobj;
@@ -68,15 +68,40 @@ size_t recvDataCallback(char *ptr, size_t size, size_t nmemb, void *userdata)
 
 		if (jobj != NULL) {
 			onionPrint(ONION_SEVERITY_DEBUG, ">> Write_callback: valid json: '%s'\n", ptr);
+			// cleanup the json object
+			json_object_put(jobj);
 
 			// device client - process the command received from the server
-			status 	= dcProcessRecvCommand(jobj);
+			status 	= dcProcessRecvCommand(ptr);
 		}
 	}
 
 
 	return 	realSize;
 }
+
+// parse data received from the server
+size_t recvDataCallback(char *ptr, size_t size, size_t nmemb, void *userdata)
+{
+	int 			status;
+	size_t 			realSize = size * nmemb;
+
+	// find current system time
+	time_t t;
+    time(&t);
+
+	onionPrint(ONION_SEVERITY_DEBUG, ">> Write_callback: received '%d' bytes, time: '%s'\n", realSize, ctime(&t) );
+	if (realSize > 0 && ptr[0] == '{' && ptr[realSize-1] == '}') {
+		onionPrint(ONION_SEVERITY_DEBUG, ">> Write_callback: valid json: '%s'\n", ptr);
+
+		// device client - process the command received from the server
+		status 	= dcProcessRecvCommand(ptr);
+	}
+
+
+	return 	realSize;
+}
+
 
 // listen to device server
 //	HTTP GET request w/ device id and secret
@@ -90,9 +115,10 @@ int curlListen (char* host, char* request, int debugLevel)
 
 	char 		getUrl[STRING_LENGTH];
 
-
+	onionPrint(ONION_SEVERITY_DEBUG, ">> curlListen\n");
 	// init the curl session
 	handle 	= curl_easy_init();
+	onionPrint(ONION_SEVERITY_DEBUG, ">> curlListen: got handle\n");
 
 	// set the options
 	sprintf(getUrl, "%s/%s", host, request);

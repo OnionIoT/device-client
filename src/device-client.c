@@ -36,28 +36,32 @@ int dcGetIdentity (char* devId, char* key)
 	return 	status;
 }
 
-// main function to launch the listening service
-int dcRun (char* devId, char* key, char* host, int debugLevel)
+// store the required info in the dcInfo struct
+int dcSetup(char* devId, char* key, char* host)
 {
-	int 	status;
-	char 	listenPath[STRING_LENGTH];
-	char 	request[STRING_LENGTH];
-
-	// initialize the ubus blob msg
-	//ubusInit();
-
 	// store pertinent info globally
 	strcpy(dcInfo.host, 	host);
 	strcpy(dcInfo.devId, 	devId);
 	strcpy(dcInfo.key, 		key);
 
-	// generate the http request:
+	return EXIT_SUCCESS;
+}
+
+// main function to launch the listening service
+int dcRun (int debugLevel)
+{
+	int 	status;
+	char 	listenPath[STRING_LENGTH];
+
+	onionPrint(ONION_SEVERITY_DEBUG, ">> Starting device client\n");
+
+	// generate the listen path
 	//	"GET /dev1/listen?key=key1 HTTP/1.1\r\nHost: zh.onion.io\r\n\r\n";
-	sprintf(listenPath, LISTEN_PATH_TEMPLATE, devId, key);
-	sprintf(request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", listenPath, host);
+	sprintf(listenPath, LISTEN_PATH_TEMPLATE, dcInfo.devId, dcInfo.key);
 
 	// start listening to the device server
-	curlListen(host, listenPath, debugLevel);
+	onionPrint(ONION_SEVERITY_DEBUG, ">> Starting listening...\n");
+	status 	= curlListen(dcInfo.host, listenPath, debugLevel);
 
 	onionPrint(ONION_SEVERITY_INFO, "> Connection lost!\n");
 
@@ -66,28 +70,30 @@ int dcRun (char* devId, char* key, char* host, int debugLevel)
 }
 
 // process all commands received from the device server
-int dcProcessRecvCommand (json_object *jobj)
+int dcProcessRecvCommand (char* receivedData)
 {
 	int 			status 	= EXIT_FAILURE;
 	char			cmd[STRING_LENGTH];
-	json_object 	*jCmd;
+	json_object 	*jObj;
 
 	pthread_t 		pth;
 
+	// parse the string-form json
+	jObj 	= json_tokener_parse(receivedData);
 
-	jsonPrint(ONION_SEVERITY_DEBUG, jobj, "");
+	if (jObj != NULL) {
+		jsonPrint(ONION_SEVERITY_DEBUG, jObj, "");
 
-
-	// create thread to process the command and send post response
-	pthread_create(&pth, NULL, dcResponseThread, jobj); 
-	
+		// create thread to process the command and send post response
+		pthread_create(&pth, NULL, dcResponseThread, jObj);
+	}
 
 	return 	status;
 }
 
 
 // populate response structure
-int dcGenerateResponseUrl (json_object *jobj, char* respUrl, char* id)
+int dcGenerateResponseUrl (json_object *jObj, char* respUrl, char* id)
 {
 	int 	status;
 	char	eventId[STRING_LENGTH];
@@ -99,10 +105,12 @@ int dcGenerateResponseUrl (json_object *jobj, char* respUrl, char* id)
 	onionPrint(ONION_SEVERITY_INFO, "> Sending response to device-server\n"); 
 
 	// parse the event id
-	status 	= 	json_object_object_get_ex(jobj, JSON_REQUEST_EVENT_ID_KEY, &jret);
+	status 	= 	json_object_object_get_ex(jObj, JSON_REQUEST_EVENT_ID_KEY, &jret);
 	if (status != 0) {
 		// read the strings from the objects
 		status	= 	jsonGetString(jret, &eventId );
+		// clean-up
+		json_object_put(jret);
 	}
 	else {
 		// use the command argument as the id
@@ -119,7 +127,7 @@ int dcGenerateResponseUrl (json_object *jobj, char* respUrl, char* id)
 }
 
 // process a requested ubus command
-int dcProcessUbusCommand (json_object *jobj, char* respUrl)
+int dcProcessUbusCommand (json_object *jObj, char* respUrl)
 {
 	int 			status;
 	json_object 	*jGroup;
@@ -130,9 +138,9 @@ int dcProcessUbusCommand (json_object *jobj, char* respUrl)
 	const char		*param;
 
 	// check the received json for the 'group' and 'method' objects
-	status 	= 	json_object_object_get_ex(jobj, JSON_REQUEST_GROUP_KEY,  &jGroup);
-	status 	|=	json_object_object_get_ex(jobj, JSON_REQUEST_METHOD_KEY, &jMethod);
-	status 	|=	json_object_object_get_ex(jobj, JSON_REQUEST_PARAM_KEY,  &jParam);
+	status 	= 	json_object_object_get_ex(jObj, JSON_REQUEST_GROUP_KEY,  &jGroup);
+	status 	|=	json_object_object_get_ex(jObj, JSON_REQUEST_METHOD_KEY, &jMethod);
+	status 	|=	json_object_object_get_ex(jObj, JSON_REQUEST_PARAM_KEY,  &jParam);
 
 	// check if the 'group' and 'method' object are both found
 	if (status != 0) {
@@ -211,7 +219,7 @@ void *dcIdentityThread(void *arg)
 void *dcResponseThread(void *arg)
 {
 	int 			status;
-	json_object 	*jobj;
+	json_object 	*jObj;
 	json_object 	*jCmd;
 	char			cmd[BUFFER_LENGTH];
 	char 			respUrl[BUFFER_LENGTH];
@@ -219,14 +227,14 @@ void *dcResponseThread(void *arg)
 	onionPrint(ONION_SEVERITY_DEBUG, "\n>> RESPONSE THREAD!\n");
 
 	// convert the argument to json object
-	jobj 	= (json_object*)arg;
+	jObj 	= (json_object*)arg;
 
 	// read the command object
-	status 	= 	json_object_object_get_ex(jobj, JSON_REQUEST_COMMAND_KEY, &jCmd);
+	status 	= 	json_object_object_get_ex(jObj, JSON_REQUEST_COMMAND_KEY, &jCmd);
 
 	if (status != 0) {
 		// parse the command string
-		status	= 	jsonGetString(jCmd, &cmd );
+		status	= 	jsonGetString(jCmd, &cmd);
 
 		if (status == EXIT_FAILURE) {
 			dcRespondError (respUrl, "Could not read 'command' object!\n");
@@ -234,13 +242,13 @@ void *dcResponseThread(void *arg)
 		}
 
 		// setup the response to the server
-		status 	= dcGenerateResponseUrl(jobj, &respUrl, cmd);
+		status 	= dcGenerateResponseUrl(jObj, &respUrl, cmd);
 
 		// read the command
 		if (strncmp(cmd, DEVICE_COMMAND_UBUS, strlen(DEVICE_COMMAND_UBUS)) == 0 ) {
 			//// UBUS COMMAND
 			// carry out the ubus command
-			status 	= dcProcessUbusCommand(jobj, &respUrl);
+			status 	= dcProcessUbusCommand(jObj, &respUrl);
 		}
 		else if (strncmp(cmd, DEVICE_COMMAND_INIT, strlen(DEVICE_COMMAND_INIT)) == 0 ) {
 			//// INIT CONNECTION
@@ -265,7 +273,10 @@ void *dcResponseThread(void *arg)
 	else {
 		dcRespondError (respUrl, "Could not find 'command' object!\n");
 	}
-	
+
+	// free the json object
+	json_object_put(jObj);
+
 
 	return NULL;
 }
