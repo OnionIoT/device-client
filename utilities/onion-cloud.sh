@@ -26,7 +26,7 @@ value=""
 ##### Print Usage ###########
 usage () {
 	echo "Functionality:"
-	echo "	Configure the device to connect to the Onion Cloud using a setup code"
+	echo "	Configure the device to connect to the Onion Cloud using a setup code generated on the Cloud"
 	echo ""
 	echo "Usage: $0 setup <setup code>"
 	echo ""
