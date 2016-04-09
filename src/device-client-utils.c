@@ -51,6 +51,10 @@ void jsonPrint (int severity, json_object *jobj, char* tab)
 	}
 }*/
 
+// populates 'value' with string from json object
+// 	returns:
+//	EXIT_SUCESS 	- valid string populated into value
+// 	EXIT_FAILURE	- object is not of type string
 int jsonGetString (json_object *jobj, char* value)
 {
 	int 	status;
@@ -68,5 +72,19 @@ int jsonGetString (json_object *jobj, char* value)
 	}
 
 	return 	status;
+}
+
+// returns:
+//	1	- if the text is json
+//	0	- if not
+int isJson (char* text, int size)
+{
+	int bJson 	= 0;
+
+	if (size > 0 && text[0] == '{' && text[size-1] == '}') {
+		bJson 	= 1;
+	}
+
+	return bJson;
 }
 

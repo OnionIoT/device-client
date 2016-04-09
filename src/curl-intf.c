@@ -91,7 +91,7 @@ size_t recvDataCallback(char *ptr, size_t size, size_t nmemb, void *userdata)
     time(&t);
 
 	onionPrint(ONION_SEVERITY_DEBUG, ">> Write_callback: received '%d' bytes, time: '%s'\n", realSize, ctime(&t) );
-	if (realSize > 0 && ptr[0] == '{' && ptr[realSize-1] == '}') {
+	if (isJson(ptr, realSize) == 1) {
 		onionPrint(ONION_SEVERITY_DEBUG, ">> Write_callback: valid json: '%s'\n", ptr);
 
 		// device client - process the command received from the server

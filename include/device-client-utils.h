@@ -15,6 +15,8 @@
 void 			jsonPrint			(int severity, json_object *jobj, char* tab);
 int 			jsonGetString 		(json_object *jobj, char* value);
 
+int 			isJson 				(char* text, int size);
+
 
 #endif // _DEVICE_CLIENT_UTILS_H_ 
 
