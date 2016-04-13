@@ -14,7 +14,7 @@ int dcGetIdentity (char* devId, char* key)
 {
 	int 		status = EXIT_FAILURE;
 	pthread_t 	pth;
-	void*		info;
+	void*		info 	= NULL;
 
 	// launch thread to read device ID and key
 	pthread_create(&pth, NULL, dcIdentityThread, NULL);
@@ -40,9 +40,9 @@ int dcGetIdentity (char* devId, char* key)
 int dcSetup(char* devId, char* key, char* host)
 {
 	// store pertinent info globally
-	strcpy(dcInfo.host, 	host);
-	strcpy(dcInfo.devId, 	devId);
-	strcpy(dcInfo.key, 		key);
+	strncpy(dcInfo.host, 	host,	strlen(host) );
+	strncpy(dcInfo.devId, 	devId, 	strlen(devId) );
+	strncpy(dcInfo.key, 	key,	strlen(key) );
 
 	return EXIT_SUCCESS;
 }
@@ -86,6 +86,7 @@ int dcProcessRecvCommand (char* receivedData)
 
 		// create thread to process the command and send post response
 		pthread_create(&pth, NULL, dcResponseThread, jObj);
+		pthread_join(pth, NULL);	// join the thread so the thread memory is freed
 	}
 
 	return 	status;
@@ -195,6 +196,7 @@ void *dcIdentityThread(void *arg)
 	onionPrint(ONION_SEVERITY_DEBUG, "\n>> IDENTITY THREAD!\n");
 
 	// allocate the structure
+	status 	= EXIT_FAILURE;
 	info 	= malloc(sizeof *info);
 
 	// find the deviceId
@@ -202,14 +204,14 @@ void *dcIdentityThread(void *arg)
 	status 	= uciGet(&option, &value);
 
 	if (status == EXIT_SUCCESS) {
-		strcpy(info->devId, value);
+		strncpy(info->devId, value, strlen(value));
 	}
 
 	// find the key
 	sprintf(option, "%s.%s", UCI_ONION_IDENTITY_ROOT, UCI_ONION_IDENTITY_KEY_OPTION);
 	status 	= uciGet(&option, &value);
 	if (status == EXIT_SUCCESS) {
-		strcpy(info->key, value);
+		strncpy(info->key, value, strlen(value));
 	}
 
 	return 	(void*) info;
