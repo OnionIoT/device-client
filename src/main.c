@@ -76,6 +76,7 @@ int main(int argc, char** argv)
 	status	= dcGetIdentity(deviceId, key);
 	// setup the device client
 	status 	|= dcSetup(deviceId, key, host);
+	// Lazar - potentially move the frees for deviceId and key here
 
 	// launch the device client
 	bRun 	= 1;
@@ -92,6 +93,8 @@ int main(int argc, char** argv)
 
 	//* clean-up *//
 	free(host);
+	free(deviceId);
+	free(key);
 	// curl cleanup
 	curlCleanup();
 	
