@@ -34,50 +34,13 @@ static int wait_on_socket(curl_socket_t sockfd, int for_recv, long timeout_ms)
 // global curl init
 int curlInit() 
 {
-	curl_global_init(CURL_GLOBAL_ALL);
+	curl_global_init(CURL_GLOBAL_SSL);
 }
 
 // global curl cleanup
 int curlCleanup() 
 {
 	curl_global_cleanup();
-}
-
-size_t onListenResponse (void *buffer, size_t size, size_t nmemb, void *userp){
-	printf("ZH: \r\n");
-	printf(buffer);
-}
-
-// parse data received from the server
-size_t recvDataCallbackOrig(char *ptr, size_t size, size_t nmemb, void *userdata)
-{
-	int 			status;
-	json_object 	*jobj;
-	size_t 			realSize = size * nmemb;
-
-	// find current system time
-	time_t t;
-    time(&t);
-
-	onionPrint(ONION_SEVERITY_DEBUG, ">> Write_callback: received '%d' bytes, time: '%s'\n", realSize, ctime(&t) );
-	if (realSize > 0) {
-		//onionPrint(ONION_SEVERITY_DEBUG, "   >> received data '%s'\n", ptr);
-
-		// attempt to parse the received data as json
-		jobj 	= json_tokener_parse(ptr);
-
-		if (jobj != NULL) {
-			onionPrint(ONION_SEVERITY_DEBUG, ">> Write_callback: valid json: '%s'\n", ptr);
-			// cleanup the json object
-			json_object_put(jobj);
-
-			// device client - process the command received from the server
-			status 	= dcProcessRecvCommand(ptr);
-		}
-	}
-
-
-	return 	realSize;
 }
 
 // parse data received from the server
@@ -143,7 +106,7 @@ int curlListen (char* host, char* request, int debugLevel)
 	if(CURLE_OK != res)
 	{
 		onionPrint(ONION_SEVERITY_FATAL, "Error: curl_easy_perform: %s (%d)\n", errbuf, res);
-		return EXIT_FAILURE;
+		status = EXIT_FAILURE;
 	}
 
 	onionPrint(ONION_SEVERITY_DEBUG, ">> Completed GET\n");
@@ -167,7 +130,8 @@ int curlPost(char* url, char* postData)
 
 	// check that the handle is ok
 	if(curl) {
-		// set content type
+		// set content type	
+		// Lazar - potentially make this global so it doesnt have to be constantly remade and freed
 		headers = curl_slist_append(headers, "Accept: application/json");
 		headers = curl_slist_append(headers, "Content-Type: application/json");
 
@@ -189,6 +153,7 @@ int curlPost(char* url, char* postData)
 
 		
 		// cleanup
+		curl_slist_free_all(headers);
 		curl_easy_cleanup(curl);
 	}
 
