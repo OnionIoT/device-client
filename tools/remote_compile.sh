@@ -5,10 +5,9 @@ server="lazar@openwrt2.onion.io"
 remotePath="/home/lazar/OpenWRT-Buildroot/openwrt/dl"
 package="device-client"
 
-## upload project to openwrt2.onion.io 
 localPath="../$package"
 
-
+## upload project to remote server
 cmd="rsync -va --progress $localPath $server:$remotePath"
 echo "$cmd"
 eval "$cmd"
