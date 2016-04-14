@@ -13,12 +13,15 @@ int main(int argc, char** argv)
 	int 		verbose, debug;
 
 	int 		bRun;
+	int 		count;
 	char		*deviceId, *key;
 	char 		*host;
 
 	// set defaults
 	verbose 		= ONION_VERBOSITY_NORMAL;
 	debug 			= 0;
+
+	count 			= 0;
 
 	// save the program name
 	progname 		= argv[0];	
@@ -83,7 +86,9 @@ int main(int argc, char** argv)
 	if (status == EXIT_SUCCESS) {
 		while (bRun) {
 			status 	= dcRun(debug);
-			onionPrint(ONION_SEVERITY_INFO, "  > Restarting connection...\n");
+
+			count++;
+			onionPrint(ONION_SEVERITY_INFO, "  > Restarting connection (restart #%d) ...\n", count);
 			sleep(5);
 		}
 	}
