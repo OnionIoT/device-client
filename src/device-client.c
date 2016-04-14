@@ -77,6 +77,7 @@ int dcProcessRecvCommand (char* receivedData)
 	json_object 	*jObj;
 
 	pthread_t 		pth;
+	pthread_attr_t 	attr;
 
 	// parse the string-form json
 	jObj 	= json_tokener_parse(receivedData);
@@ -84,9 +85,16 @@ int dcProcessRecvCommand (char* receivedData)
 	if (jObj != NULL) {
 		jsonPrint(ONION_SEVERITY_DEBUG, jObj, "");
 
-		// create thread to process the command and send post response
-		pthread_create(&pth, NULL, dcResponseThread, jObj);
-		pthread_join(pth, NULL);	// join the thread so the thread memory is freed
+		//// create thread to process the command and send post response
+		// set thread attribute to be a detached thread (will release it's resources back to the system when it terminates)
+		pthread_attr_init(&attr);
+		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+		// create the thread
+		pthread_create(&pth, &attr, dcResponseThread, jObj);
+		
+		// free the attributes
+		pthread_attr_destroy(&attr);
 	}
 
 	return 	status;
@@ -214,7 +222,8 @@ void *dcIdentityThread(void *arg)
 		strncpy(info->key, value, strlen(value));
 	}
 
-	return 	(void*) info;
+	// terminate the thread and return the info
+	pthread_exit((void*) info);
 }
 
 // threading function to carry out ubus command and send response
@@ -279,7 +288,8 @@ void *dcResponseThread(void *arg)
 	// free the json object
 	json_object_put(jObj);
 
-
-	return NULL;
+	// terminate the thread
+	onionPrint(ONION_SEVERITY_DEBUG, ">> Closing RESPONSE THREAD\n");
+	pthread_exit(NULL);
 }
 
