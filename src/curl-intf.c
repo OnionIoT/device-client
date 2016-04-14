@@ -1,6 +1,10 @@
 #include <curl-intf.h>
 #include "curl/curl.h"
 
+// global variables
+struct curl_slist 	*gCurlJsonHeaders;
+
+
 /* Auxiliary function that waits on the socket. */ 
 static int wait_on_socket(curl_socket_t sockfd, int for_recv, long timeout_ms)
 {
@@ -35,11 +39,18 @@ static int wait_on_socket(curl_socket_t sockfd, int for_recv, long timeout_ms)
 int curlInit() 
 {
 	curl_global_init(CURL_GLOBAL_SSL);
+
+	// set content type	to json
+	gCurlJsonHeaders = curl_slist_append(gCurlJsonHeaders, "Accept: application/json");
+	gCurlJsonHeaders = curl_slist_append(gCurlJsonHeaders, "Content-Type: application/json");
 }
 
 // global curl cleanup
 int curlCleanup() 
 {
+	// free the json headers
+	curl_slist_free_all(gCurlJsonHeaders);
+
 	curl_global_cleanup();
 }
 
@@ -78,10 +89,10 @@ int curlListen (char* host, char* request, int debugLevel)
 
 	char 		getUrl[STRING_LENGTH];
 
-	onionPrint(ONION_SEVERITY_DEBUG, ">> curlListen\n");
+	onionPrint(ONION_SEVERITY_DEBUG_EXTRA, ">>> curlListen\n");
 	// init the curl session
 	handle 	= curl_easy_init();
-	onionPrint(ONION_SEVERITY_DEBUG, ">> curlListen: got handle\n");
+	onionPrint(ONION_SEVERITY_DEBUG_EXTRA, ">>> curlListen: got handle\n");
 
 	// set the options
 	sprintf(getUrl, "%s/%s", host, request);
@@ -130,15 +141,13 @@ int curlPost(char* url, char* postData)
 
 	// check that the handle is ok
 	if(curl) {
-		// set content type	
-		// Lazar - potentially make this global so it doesnt have to be constantly remade and freed
-		headers = curl_slist_append(headers, "Accept: application/json");
-		headers = curl_slist_append(headers, "Content-Type: application/json");
+		// future: if POST is not json, set the headers here
 
 		// set the URL that will receive the POST
 		curl_easy_setopt(curl, CURLOPT_URL, url);
 		// set headers
-		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+		// future: change the headers if required
+		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, gCurlJsonHeaders);
 		// specify the POST data
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postData);
 
@@ -146,6 +155,7 @@ int curlPost(char* url, char* postData)
 		res = curl_easy_perform(curl);
 		
 		// Check for errors
+		onionPrint(ONION_SEVERITY_DEBUG, ">> POST Sent! (url: '%s')\n", url);
 		if(res != CURLE_OK) {
 			onionPrint(ONION_SEVERITY_FATAL, "Error: %s\n", curl_easy_strerror(res));
 			status 	=  EXIT_FAILURE;
@@ -153,7 +163,9 @@ int curlPost(char* url, char* postData)
 
 		
 		// cleanup
-		curl_slist_free_all(headers);
+		if (headers != NULL) {
+			curl_slist_free_all(headers);
+		}
 		curl_easy_cleanup(curl);
 	}
 
