@@ -117,7 +117,7 @@ int dcGenerateResponseUrl (json_object *jObj, char* respUrl, char* id)
 	status 	= 	json_object_object_get_ex(jObj, JSON_REQUEST_EVENT_ID_KEY, &jret);
 	if (status != 0) {
 		// read the strings from the objects
-		status	= 	jsonGetString(jret, &eventId );
+		status	= 	jsonGetString(jret, eventId );
 		// clean-up
 		json_object_put(jret);
 	}
@@ -159,8 +159,8 @@ int dcProcessUbusCommand (json_object *jObj, char* respUrl)
 		ubusInit();
 
 		// read the strings from the objects
-		status	= 	jsonGetString(jGroup, &group);
-		status	|= 	jsonGetString(jMethod, &method);
+		status	= 	jsonGetString(jGroup, group);
+		status	|= 	jsonGetString(jMethod, method);
 
 		// convert param object to string
 		param 	= json_object_to_json_string(jParam);	
@@ -245,7 +245,7 @@ void *dcResponseThread(void *arg)
 
 	if (status != 0) {
 		// parse the command string
-		status	= 	jsonGetString(jCmd, &cmd);
+		status	= 	jsonGetString(jCmd, cmd);
 
 		if (status == EXIT_FAILURE) {
 			dcRespondError (respUrl, "Could not read 'command' object!\n");
@@ -253,13 +253,13 @@ void *dcResponseThread(void *arg)
 		}
 
 		// setup the response to the server
-		status 	= dcGenerateResponseUrl(jObj, &respUrl, cmd);
+		status 	= dcGenerateResponseUrl(jObj, respUrl, cmd);
 
 		// read the command
 		if (strncmp(cmd, DEVICE_COMMAND_UBUS, strlen(DEVICE_COMMAND_UBUS)) == 0 ) {
 			//// UBUS COMMAND
 			// carry out the ubus command
-			status 	= dcProcessUbusCommand(jObj, &respUrl);
+			status 	= dcProcessUbusCommand(jObj, respUrl);
 		}
 		else if (strncmp(cmd, DEVICE_COMMAND_INIT, strlen(DEVICE_COMMAND_INIT)) == 0 ) {
 			//// INIT CONNECTION
