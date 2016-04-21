@@ -8,14 +8,10 @@
 
 #ifndef DEVICE_CLIENT_VERSION
 #define DEVICE_CLIENT_VERSION		"0.0"
-#else
-//#define DEVICE_CLIENT_VERSION 		"DEVICE_CLIENT_VERSION"
 #endif
 
 #ifndef DEVICE_TYPE
 #define DEVICE_TYPE					"UNKNOWN"
-#else
-//#define DEVICE_TYPE 				"DEVICE_TYPE"
 #endif
 
 #define STRING_LENGTH 				256
