@@ -97,6 +97,9 @@ int curlListen (char* host, char* request, int debugLevel)
 	// set the options
 	sprintf(getUrl, "%s/%s", host, request);
 	curl_easy_setopt(handle, CURLOPT_URL, getUrl);
+	// set options to disconnect if connection speed is, on average, less than 1 byte/s for 60 seconds
+	curl_easy_setopt(handle, CURLOPT_LOW_SPEED_LIMIT, 1L);
+	curl_easy_setopt(handle, CURLOPT_LOW_SPEED_TIME, 60L);
 
 	// register write data callback to receive data from the server
 	curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, recvDataCallback);
