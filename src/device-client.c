@@ -5,6 +5,7 @@ struct 	deviceClientInfo	dcInfo;
 
 // function prototypes
 void 	*dcIdentityThread		(void *arg);
+void 	*dcSetIdentityThread	(void *arg);
 void 	*dcResponseThread		(void *arg);
 void 	dcRespondError 			(char* url, char *msg);
 
@@ -34,6 +35,27 @@ int dcGetIdentity (char* devId, char* key)
 
 	free(info);
 	return 	status;
+}
+
+// set the deviceId and key
+int dcSetIdentity (char* devId, char* key)
+{
+	void* 		status 	= NULL;
+	struct 		deviceClientInfo	*info;
+	pthread_t 	pth;
+
+	// populate the structure 
+	info 			= malloc(sizeof *info);
+	strncpy(info->devId, devId,	strlen(devId) );
+	strncpy(info->key, 	key, 	strlen(key) );
+
+	// launch thread to set device ID and key
+	pthread_create(&pth, NULL, dcSetIdentityThread, info);
+	pthread_join(pth, &status);
+
+	// clean-up
+	free(info);
+	return 	(int)status;
 }
 
 // store the required info in the dcInfo struct
@@ -208,7 +230,7 @@ void *dcIdentityThread(void *arg)
 	info 	= malloc(sizeof *info);
 
 	// find the deviceId
-	sprintf(option, "%s.%s", UCI_ONION_IDENTITY_ROOT, UCI_ONION_IDENTITY_DEVICE_ID_OPTION);
+	sprintf(option, "%s.%s.%s", UCI_ONION_IDENTITY_PACKAGE, UCI_ONION_IDENTITY_SECTION, UCI_ONION_IDENTITY_DEVICE_ID_OPTION);
 	status 	= uciGet(&option, &value);
 
 	if (status == EXIT_SUCCESS) {
@@ -216,7 +238,7 @@ void *dcIdentityThread(void *arg)
 	}
 
 	// find the key
-	sprintf(option, "%s.%s", UCI_ONION_IDENTITY_ROOT, UCI_ONION_IDENTITY_KEY_OPTION);
+	sprintf(option, "%s.%s.%s", UCI_ONION_IDENTITY_PACKAGE, UCI_ONION_IDENTITY_SECTION, UCI_ONION_IDENTITY_KEY_OPTION);
 	status 	= uciGet(&option, &value);
 	if (status == EXIT_SUCCESS) {
 		strncpy(info->key, value, strlen(value));
@@ -224,6 +246,39 @@ void *dcIdentityThread(void *arg)
 
 	// terminate the thread and return the info
 	pthread_exit((void*) info);
+}
+
+// threading function to carry out uci calls to set deviceId and key
+void *dcSetIdentityThread(void *arg)
+{
+	int 	status;
+	char 	option[STRING_LENGTH];
+	struct	deviceClientInfo	*info;
+
+	onionPrint(ONION_SEVERITY_DEBUG, "\n>> SET IDENTITY THREAD!\n");
+	//status 	= EXIT_FAILURE;
+	status 	= EXIT_SUCCESS;
+
+	// convert the argument 
+	info 	= (struct deviceClientInfo*)arg;
+
+	onionPrint(ONION_SEVERITY_DEBUG, "> Setting:\n    deviceId: '%s'\n    key:  '%s'\n", info->devId, info->key);
+
+	// add the section
+	status 	= uciSetSection(UCI_ONION_IDENTITY_PACKAGE, UCI_ONION_IDENTITY_SECTION, UCI_ONION_IDENTITY_SECTION);
+
+	if (status == EXIT_SUCCESS) {
+		// set the deviceId
+		sprintf(option, "%s.%s.%s", UCI_ONION_IDENTITY_PACKAGE, UCI_ONION_IDENTITY_SECTION, UCI_ONION_IDENTITY_DEVICE_ID_OPTION);
+		status 	= uciSetOption(&option, info->devId);
+
+		// set the secret
+		sprintf(option, "%s.%s.%s", UCI_ONION_IDENTITY_PACKAGE, UCI_ONION_IDENTITY_SECTION, UCI_ONION_IDENTITY_KEY_OPTION);
+		status 	= uciSetOption(&option, info->key);
+	}
+
+	// terminate the thread and return the info
+	pthread_exit((void*) status);
 }
 
 // threading function to carry out ubus command and send response

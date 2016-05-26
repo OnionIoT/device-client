@@ -18,6 +18,8 @@
 
 // Function declarations
 int 	dcGetIdentity 					(char* devId, char* key);
+int 	dcSetIdentity 					(char* devId, char* key);
+
 int 	dcSetup							(char* devId, char* key, char* host);
 int 	dcRun 							(int debugLevel);
 

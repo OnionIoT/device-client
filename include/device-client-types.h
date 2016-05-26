@@ -21,7 +21,8 @@
 #define DC_DEBUG_LEVEL_CURL			1
 #define DC_DEBUG_LEVEL_SERVER		2
 
-#define UCI_ONION_IDENTITY_ROOT				"onion.cloud"
+#define UCI_ONION_IDENTITY_PACKAGE			"onion"
+#define UCI_ONION_IDENTITY_SECTION			"cloud"
 #define UCI_ONION_IDENTITY_DEVICE_ID_OPTION	"deviceId"
 #define UCI_ONION_IDENTITY_KEY_OPTION		"secret"
 
