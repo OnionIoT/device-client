@@ -11,7 +11,7 @@ void 	dcRespondError 			(char* url, char *msg);
 
 
 // find deviceId and key
-int dcGetIdentity (char* devId, char* key)
+int dcGetIdentity (char* devId, char* key, char* devName)
 {
 	int 		status = EXIT_FAILURE;
 	pthread_t 	pth;
@@ -31,6 +31,15 @@ int dcGetIdentity (char* devId, char* key)
 		strncpy(key, 	(*(struct deviceClientInfo*)info).key,		strlen( (*(struct deviceClientInfo*)info).key) );
 		onionPrint(ONION_SEVERITY_INFO, "> Omega identified as device '%s'\n", devId);
 		status = EXIT_SUCCESS;
+	}
+
+	// device name will always be read
+	if 	(	info != NULL &&
+			strlen((*(struct deviceClientInfo*)info).devName) > 0
+		)
+	{
+		strncpy(devName, 	(*(struct deviceClientInfo*)info).devName, 	strlen( (*(struct deviceClientInfo*)info).devName) );
+		onionPrint(ONION_SEVERITY_DEBUG, ">> Omega device name: '%s'\n", devName);
 	}
 
 	free(info);
@@ -53,18 +62,22 @@ int dcSetIdentity (char* devId, char* key)
 	pthread_create(&pth, NULL, dcSetIdentityThread, info);
 	pthread_join(pth, &status);
 
+	// set the global dcInfo struct with the new device id
+	dcSetup(devId, key, dcInfo.devName, dcInfo.host);
+
 	// clean-up
 	free(info);
 	return 	(int)status;
 }
 
 // store the required info in the dcInfo struct
-int dcSetup(char* devId, char* key, char* host)
+int dcSetup(char* devId, char* key, char* devName, char* host)
 {
 	// store pertinent info globally
-	strncpy(dcInfo.host, 	host,	strlen(host) );
-	strncpy(dcInfo.devId, 	devId, 	strlen(devId) );
-	strncpy(dcInfo.key, 	key,	strlen(key) );
+	strncpy(dcInfo.host, 		host,		strlen(host) );
+	strncpy(dcInfo.devId, 		devId, 		strlen(devId) );
+	strncpy(dcInfo.key, 		key,		strlen(key) );
+	strncpy(dcInfo.devName, 	devName,	strlen(devName) );
 
 	return EXIT_SUCCESS;
 }
@@ -203,6 +216,44 @@ int dcProcessUbusCommand (json_object *jObj, char* respUrl)
 	return 	status;
 }
 
+// process a requested ubus command
+int dcProcessSetupCommand (json_object *jObj, char* respUrl)
+{
+	int 			status;
+	json_object 	*jDeviceId;
+	json_object 	*jDeviceSecret;
+	char			deviceId[STRING_LENGTH];
+	char			secret[STRING_LENGTH];
+	char			response[STRING_LENGTH];
+
+	// check the received json for the 'group' and 'method' objects
+	status 	= 	json_object_object_get_ex(jObj, JSON_REQUEST_DEVICE_ID_KEY,  	&jDeviceId);
+	status 	|=	json_object_object_get_ex(jObj, JSON_REQUEST_SECRET_KEY, 		&jDeviceSecret);
+
+	// check if the 'group' and 'method' object are both found
+	if (status != 0) {
+		onionPrint(ONION_SEVERITY_DEBUG, ">> Found 'deviceId' and 'secret' objects\n"); 
+
+		// read the strings from the objects
+		status	= 	jsonGetString(jDeviceId, 		deviceId);
+		status	|= 	jsonGetString(jDeviceSecret, 	secret);
+
+		// check that strings were read properly
+		if (status == EXIT_SUCCESS) {
+			onionPrint(ONION_SEVERITY_INFO, "> Received setup request: for '%s' id, '%s' secret\n", deviceId, secret);
+
+			// make the ubus call
+			status = dcSetIdentity(deviceId, secret);
+
+			// send the response
+			sprintf(response, RESPONSE_SETUP_TEMPLATE, dcInfo.devId, dcInfo.devName);
+			status 	= curlPost(respUrl, response);
+		}
+	}
+
+	return 	status;
+}
+
 // respond with an error
 void dcRespondError (char* url, char *msg)
 {
@@ -238,10 +289,19 @@ void *dcIdentityThread(void *arg)
 	}
 
 	// find the key
+	memset(value, 0, sizeof(value));
 	sprintf(option, "%s.%s.%s", UCI_ONION_IDENTITY_PACKAGE, UCI_ONION_IDENTITY_SECTION, UCI_ONION_IDENTITY_KEY_OPTION);
 	status 	= uciGet(&option, &value);
 	if (status == EXIT_SUCCESS) {
 		strncpy(info->key, value, strlen(value));
+	}
+
+	// find the hostname
+	memset(value, 0, sizeof(value));
+	sprintf(option, UCI_SYSTEM_TEMPLATE, UCI_SYSTEM_PACKAGE, UCI_SYSTEM_SECTION, UCI_SYSTEM_HOSTNAME_OPTION);
+	status 	= uciGet(&option, &value);
+	if (status == EXIT_SUCCESS) {
+		strncpy(info->devName, value, strlen(value));
 	}
 
 	// terminate the thread and return the info
@@ -330,6 +390,13 @@ void *dcResponseThread(void *arg)
 			
 			// send the response
 			status 	= curlPost(respUrl, RESPONSE_HEARTBEAT_TEMPLATE);
+		}
+		else if (strncmp(cmd, DEVICE_COMMAND_SETUP, strlen(DEVICE_COMMAND_SETUP)) == 0 ) {
+			//// HEARTBEAT
+			onionPrint(ONION_SEVERITY_INFO, "    > Setup command!!\n");
+			
+			// send the response
+			status 	= dcProcessSetupCommand(jObj, respUrl);
 		}
 		else {
 			//// INVALID COMMAND

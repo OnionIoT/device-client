@@ -17,10 +17,10 @@
 
 
 // Function declarations
-int 	dcGetIdentity 					(char* devId, char* key);
+int 	dcGetIdentity 					(char* devId, char* key, char* devName);
 int 	dcSetIdentity 					(char* devId, char* key);
 
-int 	dcSetup							(char* devId, char* key, char* host);
+int 	dcSetup							(char* devId, char* key, char* devName, char* host);
 int 	dcRun 							(int debugLevel);
 
 int 	dcProcessRecvCommand 			(char* receivedData);

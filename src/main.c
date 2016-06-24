@@ -14,7 +14,7 @@ int main(int argc, char** argv)
 
 	int 		bRun;
 	int 		count;
-	char		*deviceId, *key;
+	char		*deviceId, *key, *deviceName;
 	char 		*host;
 
 	// set defaults
@@ -72,13 +72,20 @@ int main(int argc, char** argv)
 	// allocate memory
 	deviceId 	= malloc(STRING_LENGTH * sizeof *deviceId);
 	key 	 	= malloc(STRING_LENGTH * sizeof *key);
+	deviceName	= malloc(STRING_LENGTH * sizeof *deviceName);
 
 
 	//* program *//
 	// find the device id and key
-	status	= dcGetIdentity(deviceId, key);
+	status	= dcGetIdentity(deviceId, key, deviceName);
 	// setup the device client
-	status 	|= dcSetup(deviceId, key, host);
+	if (status == EXIT_SUCCESS) {
+		status 	= dcSetup(deviceId, key, deviceName, host);
+	}
+	else {
+		// connect as anonymous device
+		status 	= dcSetup(CLOUD_ANONYMOUS_DEVICE_ID, CLOUD_ANONYMOUS_DEVICE_SECRET, deviceName, host);
+	}
 	// Lazar - potentially move the frees for deviceId and key here
 
 	// launch the device client
