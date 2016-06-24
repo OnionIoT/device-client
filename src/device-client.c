@@ -246,7 +246,7 @@ int dcProcessSetupCommand (json_object *jObj, char* respUrl)
 			status = dcSetIdentity(deviceId, secret);
 
 			// send the response
-			sprintf(response, RESPONSE_SETUP_TEMPLATE, dcInfo.devId, dcInfo.devName);
+			sprintf(response, RESPONSE_SETUP_TEMPLATE, DEVICE_CLIENT_VERSION, DEVICE_TYPE, dcInfo.devId, dcInfo.devName);
 			status 	= curlPost(respUrl, response);
 		}
 	}

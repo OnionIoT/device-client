@@ -42,7 +42,7 @@
 #define REPLY_POST_TEMPLATE 		"key=%s"
 
 #define RESPONSE_INIT_TEMPLATE 			"{\"version\":\"%s\", \"device\":\"%s\"}"
-#define RESPONSE_SETUP_TEMPLATE		 	"{\"setup\":\"ok\", \"deviceId\":\"%s\", \"hostname\":\"%s\"}"
+#define RESPONSE_SETUP_TEMPLATE		 	"{\"setup\":\"ok\", \"version\":\"%s\", \"device\":\"%s\", \"deviceId\":\"%s\", \"hostname\":\"%s\"}"
 #define RESPONSE_HEARTBEAT_TEMPLATE 	"{\"heartbeat\":\"ok\"}"
 #define RESPONSE_ERROR_TEMPLATE 		"{\"error\":\"%s\"}"
 
