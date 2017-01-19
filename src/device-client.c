@@ -4,7 +4,6 @@
 struct 	deviceClientInfo	dcInfo;
 
 // function prototypes
-void 	*dcIdentityThread		(void *arg);
 void 	*dcSetIdentityThread	(void *arg);
 void 	*dcResponseThread		(void *arg);
 void 	dcRespondError 			(char* url, char *msg);
@@ -14,35 +13,39 @@ void 	dcRespondError 			(char* url, char *msg);
 int dcGetIdentity (char* devId, char* key, char* devName)
 {
 	int 		status = EXIT_FAILURE;
-	pthread_t 	pth;
-	void*		info 	= NULL;
 
-	// launch thread to read device ID and key
-	pthread_create(&pth, NULL, dcIdentityThread, NULL);
-	pthread_join(pth, &info);
+	char 	option[STRING_LENGTH];
+	char 	value[STRING_LENGTH];
 
-	// check that the read succeeded
-	if 	(	info != NULL &&
-			strlen((*(struct deviceClientInfo*)info).devId) > 0 &&
-			strlen((*(struct deviceClientInfo*)info).key) > 0
-		)
-	{
-		strncpy(devId, 	(*(struct deviceClientInfo*)info).devId, 	strlen( (*(struct deviceClientInfo*)info).devId) );
-		strncpy(key, 	(*(struct deviceClientInfo*)info).key,		strlen( (*(struct deviceClientInfo*)info).key) );
-		onionPrint(ONION_SEVERITY_INFO, "> Omega identified as device '%s'\n", devId);
-		status = EXIT_SUCCESS;
+	// find the deviceId
+	memset(value, 0, sizeof(value));
+	sprintf(option, "%s.%s.%s", UCI_ONION_IDENTITY_PACKAGE, UCI_ONION_IDENTITY_SECTION, UCI_ONION_IDENTITY_DEVICE_ID_OPTION);
+	status 	= uciGet(&option, &value);
+
+	if (status == EXIT_SUCCESS) {
+		memset(devId, 0, sizeof(devId));
+		strcpy(devId, value);
 	}
 
-	// device name will always be read
-	if 	(	info != NULL &&
-			strlen((*(struct deviceClientInfo*)info).devName) > 0
-		)
-	{
-		strncpy(devName, 	(*(struct deviceClientInfo*)info).devName, 	strlen( (*(struct deviceClientInfo*)info).devName) );
-		onionPrint(ONION_SEVERITY_DEBUG, ">> Omega device name: '%s'\n", devName);
+	// find the key
+	memset(value, 0, sizeof(value));
+	sprintf(option, "%s.%s.%s", UCI_ONION_IDENTITY_PACKAGE, UCI_ONION_IDENTITY_SECTION, UCI_ONION_IDENTITY_KEY_OPTION);
+	status 	= uciGet(&option, &value);
+
+	if (status == EXIT_SUCCESS) {
+		memset(key, 0, sizeof(key));
+		strcpy(key, value);
 	}
 
-	free(info);
+	// find the hostname
+	memset(value, 0, sizeof(value));
+	sprintf(option, UCI_SYSTEM_TEMPLATE, UCI_SYSTEM_PACKAGE, UCI_SYSTEM_SECTION, UCI_SYSTEM_HOSTNAME_OPTION);
+	status 	= uciGet(&option, &value);
+	if (status == EXIT_SUCCESS) {
+		memset(devName, 0, sizeof(devName));
+		strcpy(devName, value);
+	}
+
 	return 	status;
 }
 
@@ -53,10 +56,10 @@ int dcSetIdentity (char* devId, char* key)
 	struct 		deviceClientInfo	*info;
 	pthread_t 	pth;
 
-	// populate the structure 
+	// populate the structure
 	info 			= malloc(sizeof *info);
-	strncpy(info->devId, devId,	strlen(devId) );
-	strncpy(info->key, 	key, 	strlen(key) );
+	strcpy(info->devId, devId );
+	strcpy(info->key, 	key );
 
 	// launch thread to set device ID and key
 	pthread_create(&pth, NULL, dcSetIdentityThread, info);
@@ -73,11 +76,17 @@ int dcSetIdentity (char* devId, char* key)
 // store the required info in the dcInfo struct
 int dcSetup(char* devId, char* key, char* devName, char* host)
 {
+	// reset the global info
+	memset(dcInfo.host, 0, sizeof(dcInfo.host));
+	memset(dcInfo.devId, 0, sizeof(dcInfo.devId));
+	memset(dcInfo.key, 0, sizeof(dcInfo.key));
+	memset(dcInfo.devName, 0, sizeof(dcInfo.devName));
+
 	// store pertinent info globally
-	strncpy(dcInfo.host, 		host,		strlen(host) );
-	strncpy(dcInfo.devId, 		devId, 		strlen(devId) );
-	strncpy(dcInfo.key, 		key,		strlen(key) );
-	strncpy(dcInfo.devName, 	devName,	strlen(devName) );
+	strcpy(dcInfo.host, 		host);
+	strcpy(dcInfo.devId, 		devId);
+	strcpy(dcInfo.key, 			key);
+	strcpy(dcInfo.devName, 	devName);
 
 	return EXIT_SUCCESS;
 }
@@ -127,7 +136,7 @@ int dcProcessRecvCommand (char* receivedData)
 
 		// create the thread
 		pthread_create(&pth, &attr, dcResponseThread, jObj);
-		
+
 		// free the attributes
 		pthread_attr_destroy(&attr);
 	}
@@ -146,7 +155,7 @@ int dcGenerateResponseUrl (json_object *jObj, char* respUrl, char* id)
 
 	json_object 	*jret;
 
-	onionPrint(ONION_SEVERITY_INFO, "> Sending response to device-server\n"); 
+	onionPrint(ONION_SEVERITY_INFO, "> Sending response to device-server\n");
 
 	// parse the event id
 	status 	= 	json_object_object_get_ex(jObj, JSON_REQUEST_EVENT_ID_KEY, &jret);
@@ -158,7 +167,6 @@ int dcGenerateResponseUrl (json_object *jObj, char* respUrl, char* id)
 	}
 	else {
 		// use the command argument as the id
-		//strncpy(eventId, id, strlen(id) );
 		strcpy(eventId, id);
 	}
 
@@ -188,7 +196,7 @@ int dcProcessUbusCommand (json_object *jObj, char* respUrl)
 
 	// check if the 'group' and 'method' object are both found
 	if (status != 0) {
-		onionPrint(ONION_SEVERITY_DEBUG, ">> Found 'group' and 'method' objects\n"); 
+		onionPrint(ONION_SEVERITY_DEBUG, ">> Found 'group' and 'method' objects\n");
 
 		// initialize the ubus blob msg
 		ubusInit();
@@ -198,7 +206,7 @@ int dcProcessUbusCommand (json_object *jObj, char* respUrl)
 		status	|= 	jsonGetString(jMethod, method);
 
 		// convert param object to string
-		param 	= json_object_to_json_string(jParam);	
+		param 	= json_object_to_json_string(jParam);
 
 		// check that strings were read properly
 		if (status == EXIT_SUCCESS) {
@@ -232,7 +240,7 @@ int dcProcessSetupCommand (json_object *jObj, char* respUrl)
 
 	// check if the 'group' and 'method' object are both found
 	if (status != 0) {
-		onionPrint(ONION_SEVERITY_DEBUG, ">> Found 'deviceId' and 'secret' objects\n"); 
+		onionPrint(ONION_SEVERITY_DEBUG, ">> Found 'deviceId' and 'secret' objects\n");
 
 		// read the strings from the objects
 		status	= 	jsonGetString(jDeviceId, 		deviceId);
@@ -266,48 +274,6 @@ void dcRespondError (char* url, char *msg)
 }
 
 //// multi-threaded functions
-// threading function to carry out uci calls and find deviceId and key
-void *dcIdentityThread(void *arg)
-{
-	int 	status;
-	char 	option[STRING_LENGTH];
-	char 	value[STRING_LENGTH];
-	struct	deviceClientInfo	*info;
-
-	onionPrint(ONION_SEVERITY_DEBUG, "\n>> IDENTITY THREAD!\n");
-
-	// allocate the structure
-	status 	= EXIT_FAILURE;
-	info 	= malloc(sizeof *info);
-
-	// find the deviceId
-	sprintf(option, "%s.%s.%s", UCI_ONION_IDENTITY_PACKAGE, UCI_ONION_IDENTITY_SECTION, UCI_ONION_IDENTITY_DEVICE_ID_OPTION);
-	status 	= uciGet(&option, &value);
-
-	if (status == EXIT_SUCCESS) {
-		strncpy(info->devId, value, strlen(value));
-	}
-
-	// find the key
-	memset(value, 0, sizeof(value));
-	sprintf(option, "%s.%s.%s", UCI_ONION_IDENTITY_PACKAGE, UCI_ONION_IDENTITY_SECTION, UCI_ONION_IDENTITY_KEY_OPTION);
-	status 	= uciGet(&option, &value);
-	if (status == EXIT_SUCCESS) {
-		strncpy(info->key, value, strlen(value));
-	}
-
-	// find the hostname
-	memset(value, 0, sizeof(value));
-	sprintf(option, UCI_SYSTEM_TEMPLATE, UCI_SYSTEM_PACKAGE, UCI_SYSTEM_SECTION, UCI_SYSTEM_HOSTNAME_OPTION);
-	status 	= uciGet(&option, &value);
-	if (status == EXIT_SUCCESS) {
-		strncpy(info->devName, value, strlen(value));
-	}
-
-	// terminate the thread and return the info
-	pthread_exit((void*) info);
-}
-
 // threading function to carry out uci calls to set deviceId and key
 void *dcSetIdentityThread(void *arg)
 {
@@ -319,7 +285,7 @@ void *dcSetIdentityThread(void *arg)
 	//status 	= EXIT_FAILURE;
 	status 	= EXIT_SUCCESS;
 
-	// convert the argument 
+	// convert the argument
 	info 	= (struct deviceClientInfo*)arg;
 
 	onionPrint(ONION_SEVERITY_DEBUG, "> Setting:\n    deviceId: '%s'\n    key:  '%s'\n", info->devId, info->key);
@@ -387,14 +353,14 @@ void *dcResponseThread(void *arg)
 		else if (strncmp(cmd, DEVICE_COMMAND_HEARTBEAT, strlen(DEVICE_COMMAND_HEARTBEAT)) == 0 ) {
 			//// HEARTBEAT
 			onionPrint(ONION_SEVERITY_INFO, "    > Connection heartbeat\n");
-			
+
 			// send the response
 			status 	= curlPost(respUrl, RESPONSE_HEARTBEAT_TEMPLATE);
 		}
 		else if (strncmp(cmd, DEVICE_COMMAND_SETUP, strlen(DEVICE_COMMAND_SETUP)) == 0 ) {
 			//// HEARTBEAT
 			onionPrint(ONION_SEVERITY_INFO, "    > Setup command!!\n");
-			
+
 			// send the response
 			status 	= dcProcessSetupCommand(jObj, respUrl);
 		}
@@ -414,4 +380,3 @@ void *dcResponseThread(void *arg)
 	onionPrint(ONION_SEVERITY_DEBUG, ">> Closing RESPONSE THREAD\n");
 	pthread_exit(NULL);
 }
-

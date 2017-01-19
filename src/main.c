@@ -1,6 +1,6 @@
 #include <main.h>
 
-void usage(const char* progName) 
+void usage(const char* progName)
 {
 	printf("device-client: interface with Onion cloud device-server\n");
 }
@@ -24,7 +24,7 @@ int main(int argc, char** argv)
 	count 			= 0;
 
 	// save the program name
-	progname 		= argv[0];	
+	progname 		= argv[0];
 
 
 	//// parse the option arguments
@@ -56,10 +56,10 @@ int main(int argc, char** argv)
 	// debugging options
 	host 	= malloc(STRING_LENGTH * sizeof *host);
 	if (debug < DC_DEBUG_LEVEL_SERVER) {
-		strncpy(host, DEVICE_SERVER, strlen(DEVICE_SERVER) );
+		strcpy(host, DEVICE_SERVER);
 	}
 	else {
-		strncpy(host, DEBUG_SERVER, strlen(DEBUG_SERVER) );
+		strcpy(host, DEBUG_SERVER );
 	}
 
 
@@ -109,7 +109,6 @@ int main(int argc, char** argv)
 	free(key);
 	// curl cleanup
 	curlCleanup();
-	
+
 	return 0;
 }
-
